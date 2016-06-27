@@ -1,0 +1,29 @@
+﻿<Page
+    x:Class="SensorApp.InclinometerPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:SensorApp"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid Background="#FF0C0C0C">
+        <StackPanel>
+            <TextBlock Text="Inclinometer" Foreground="#FFEDE6E6"></TextBlock>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Pitch:" Width="62" Foreground="#FFEDE6E6"/>
+                <TextBlock x:Name="txtPitch" Foreground="#FFF2F2F2"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Roll:" Width="62" Foreground="#FFF6F0F0"/>
+                <TextBlock x:Name="txtRoll" Foreground="#FFF2EEEE"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Yaw:" Width="62" Foreground="#FFF6F0F0"/>
+                <TextBlock x:Name="txtYaw" Foreground="#FFFFF8F8"/>
+            </StackPanel>
+        </StackPanel>
+
+        <Image Source="/../Assets/MyImages/airplane.png" Name="airplane" VerticalAlignment="Center" HorizontalAlignment="Center" Width="256" RenderTransformOrigin="0.5, 0.5"></Image>
+    </Grid>
+</Page>

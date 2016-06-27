@@ -42,7 +42,7 @@ namespace SensorApp
 #if DEBUG
             if (System.Diagnostics.Debugger.IsAttached)
             {
-                this.DebugSettings.EnableFrameRateCounter = true;
+                //this.DebugSettings.EnableFrameRateCounter = true;
             }
 #endif
             Frame rootFrame = Window.Current.Content as Frame;
@@ -77,6 +77,7 @@ namespace SensorApp
                 // Ensure the current window is active
                 Window.Current.Activate();
             }
+            Windows.UI.Core.SystemNavigationManager.GetForCurrentView().BackRequested += App_BackRequested;
         }
 
         /// <summary>
@@ -101,6 +102,21 @@ namespace SensorApp
             var deferral = e.SuspendingOperation.GetDeferral();
             //TODO: Save application state and stop any background activity
             deferral.Complete();
+        }
+
+        private void App_BackRequested(object sender, Windows.UI.Core.BackRequestedEventArgs e)
+        {
+            Frame rootFrame = Window.Current.Content as Frame;
+            if (rootFrame == null)
+                return;
+
+            // Navigate back if possible, and if the event has not 
+            // already been handled .
+            if (rootFrame.CanGoBack && e.Handled == false)
+            {
+                e.Handled = true;
+                rootFrame.GoBack();
+            }
         }
     }
 }

@@ -1,0 +1,23 @@
+﻿<Page
+    x:Class="SensorApp.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:SensorApp"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid Background="#FF0C0C0C">
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+            <StackPanel.Resources>
+                <Style TargetType="Button">
+                    <Setter Property="Margin" Value="0,5,0,0"/>
+                </Style>
+            </StackPanel.Resources>
+            <TextBlock Text="SensorApp" Foreground="#2d89ef" HorizontalAlignment="Center" FontSize="42"></TextBlock>
+            <Button Height="64" Width="256" Background="#2d89ef" Name="AccelerometerButton" Click="AccelerometerButton_Click">Accelerometer</Button>
+            <Button Height="64" Width="256" Background="#2d89ef" Name="InclinometerButton" Click="InclinometerButton_Click" >Inclinometer</Button>
+            <Button Height="64" Width="256" Background="#2d89ef" Name="OrientationButton" Click="OrientationButton_Click" >OrientationtSensor</Button>
+        </StackPanel>
+    </Grid>
+</Page>
