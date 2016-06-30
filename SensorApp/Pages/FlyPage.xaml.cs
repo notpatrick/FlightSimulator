@@ -118,8 +118,8 @@ namespace SensorApp
             DrawArea.Height = This.ActualHeight;
             DrawArea.Width = This.ActualWidth;
             var proj = new PlaneProjection();
-            proj.RotationX = -89;
-            proj.GlobalOffsetY = 80;
+            proj.RotationX = -86;
+            proj.GlobalOffsetY = 10;
             proj.GlobalOffsetZ = 180;
             DrawAreaBorder.Projection = proj;
         }
@@ -129,7 +129,7 @@ namespace SensorApp
         {
             var path = "ms-appx:///../Assets/MyImages/pattern.png";
             var pathInverted = "ms-appx:///../Assets/MyImages/pattern-inverted.png";
-            var width = DrawArea.ActualWidth;
+            var width = Math.Round(DrawArea.ActualWidth, MidpointRounding.AwayFromZero);
             backgroundImages = new[]
             {
                 new Image() {Source = new BitmapImage(new Uri(path)), Width = width, Height = width},
@@ -151,9 +151,8 @@ namespace SensorApp
         {
             var path = "ms-appx:///../Assets/MyImages/big-sky.png";
             var areaHeight = SkyDrawArea.ActualHeight;
-            var planeHeight = Airplane.ActualHeight;
-            var height = areaHeight/2 + planeHeight/4 * 3;
-            var width = height/270*1728;
+            var height = Math.Round(areaHeight/2 );
+            var width = Math.Round(height/270*1728, MidpointRounding.AwayFromZero);
             skyImages = new[]
             {
                 new Image() {Source = new BitmapImage(new Uri(path)), Height = height, Width = width},
@@ -171,7 +170,7 @@ namespace SensorApp
 
         private void UpdateBackground()
         {
-            XSpeed = HorizontalSpeed(Roll);
+            XSpeed = Math.Round(HorizontalSpeed(Roll));
             OnPropertyChanged(nameof(XSpeed));
             foreach (var backgroundImage in backgroundImages)
             {
@@ -187,9 +186,9 @@ namespace SensorApp
                 {
                     newLeft = left - XSpeed;
                 }
-
-                PositionInCanvas(backgroundImage, newLeft, newTop);
                 CheckBackgroundOutOfBound(backgroundImage);
+                PositionInCanvas(backgroundImage, newLeft, newTop);
+                
             }
             foreach (var skyImage in skyImages)
             {
@@ -204,9 +203,9 @@ namespace SensorApp
                 {
                     newLeft = left - XSpeed;
                 }
-
-                PositionInCanvas(skyImage, newLeft, 0);
                 CheckSkyOutOfBound(skyImage);
+                PositionInCanvas(skyImage, newLeft, 0);
+                
             }
         }
 
@@ -227,12 +226,12 @@ namespace SensorApp
             var top = Canvas.GetTop(image);
             var left = Canvas.GetLeft(image);
 
-            if (left > width - 1)
+            if (left > width - XSpeed)
             {
-                Canvas.SetLeft(image, -width + 1);
-            } else if (left < -width + 1)
+                Canvas.SetLeft(image, -width + XSpeed);
+            } else if (left < -width + XSpeed)
             {
-                Canvas.SetLeft(image, width - 1);
+                Canvas.SetLeft(image, width - XSpeed);
             }
 
             if (top > width)
@@ -246,18 +245,16 @@ namespace SensorApp
 
         private void CheckSkyOutOfBound(Image skyImage)
         {
-            var areaWidth = SkyDrawArea.ActualWidth;
             var width = skyImage.Width;
             var left = Canvas.GetLeft(skyImage);
 
-            if (left > width - 1)
+            if (left > width - XSpeed)
             {
-                Canvas.SetLeft(skyImage, - Math.Round(width) + 1);
-            } else if (left < - width + 1)
+                Canvas.SetLeft(skyImage, - width + XSpeed);
+            } else if (left < - width + XSpeed)
             {
-                Canvas.SetLeft(skyImage, Math.Round(width, MidpointRounding.AwayFromZero) - 1);
+                Canvas.SetLeft(skyImage, width - XSpeed);
             }
-            var temp = Canvas.GetLeft(skyImage);
         }
 
 
@@ -303,7 +300,7 @@ namespace SensorApp
                     y = 0;
                     break;
                 case 1:
-                    x = width - 1;
+                    x = width;
                     y = 0;
                     break;
                 default:
@@ -318,15 +315,6 @@ namespace SensorApp
         {
             Canvas.SetLeft(element, x);
             Canvas.SetTop(element, y);
-        }
-
-        private static void CenterInCanvas(Canvas canvas, Image element)
-        {
-            double left = (canvas.ActualWidth - element.ActualWidth) / 2;
-            Canvas.SetLeft(element, left);
-
-            double top = (canvas.ActualHeight - element.ActualHeight) / 2;
-            Canvas.SetTop(element, top);
         }
 
         #region PropertyChanged

@@ -10,7 +10,7 @@
     DataContext="{Binding RelativeSource={RelativeSource Self}}">
 
     <Grid Background="#FF0C0C0C">
-        <Border Name="DrawAreaBorder" BorderBrush="LimeGreen" BorderThickness="0">
+        <Border Name="DrawAreaBorder" BorderBrush="LimeGreen" BorderThickness="3">
             <Canvas Name="DrawArea"></Canvas>
         </Border>
         <Canvas Name="SkyDrawArea"></Canvas>

@@ -7,7 +7,7 @@
     <Application.Resources>
         <Style x:Key="TextBase" TargetType="TextBlock">
             <Setter Property="FontSize" Value="8"/>
-            <Setter Property="Foreground" Value="MediumVioletRed"></Setter>
+            <Setter Property="Foreground" Value="Magenta"></Setter>
             <Setter Property="HorizontalAlignment" Value="Left"></Setter>
         </Style>
 
