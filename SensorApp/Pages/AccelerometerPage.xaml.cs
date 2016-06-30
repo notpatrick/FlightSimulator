@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Devices.Sensors;
 using Windows.Foundation;
@@ -15,6 +18,7 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
+using SensorApp.Annotations;
 
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -23,26 +27,27 @@ namespace SensorApp
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public sealed partial class AccelerometerPage : Page
+    public sealed partial class AccelerometerPage : Page, INotifyPropertyChanged
     {
         private Accelerometer _accelerometer;
+        public double XAxis { get; set; }
+        public double YAxis { get; set; }
+        public double ZAxis { get; set; }
+        public double Angle { get; set; }
 
         public AccelerometerPage()
         {
             this.InitializeComponent();
-            // Force landscape orientation
             DisplayInformation.AutoRotationPreferences = DisplayOrientations.Landscape;
 
             _accelerometer = Accelerometer.GetDefault();
             if (_accelerometer != null)
             {
-                // Establish the report interval
                 var minReportInterval = _accelerometer.MinimumReportInterval;
                 var reportInterval = minReportInterval > 16 ? minReportInterval : 16;
                 _accelerometer.ReportInterval = reportInterval;
-
-                // Assign an event handler for the reading-changed event
-                _accelerometer.ReadingChanged += new TypedEventHandler<Accelerometer, AccelerometerReadingChangedEventArgs>(ReadingChanged);
+                
+                _accelerometer.ReadingChanged += ReadingChanged;
             }
         }
 
@@ -51,17 +56,32 @@ namespace SensorApp
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
             {
                 var reading = e.Reading;
-                var angles = CalculateAngles(reading);
-                txtXAxis.Text = String.Format("{0,5:0.00}", reading.AccelerationX);
-                txtYAxis.Text = String.Format("{0,5:0.00}", reading.AccelerationY);
-                txtZAxis.Text = String.Format("{0,5:0.00}", reading.AccelerationZ);
-                txtAngle.Text = String.Format("{0,5:0.0}°", angles.Y - 90);
-
-                UpdatePlane(angles.Y - 90);
+                UpdateView(reading);
             });
         }
 
-        private Angles CalculateAngles(AccelerometerReading reading)
+        private void UpdateView(AccelerometerReading reading)
+        {
+            var angles = CalculateAngles(reading);
+            XAxis = reading.AccelerationX;
+            YAxis = reading.AccelerationY;
+            ZAxis = reading.AccelerationZ;
+            Angle = angles.Y - 90;
+            OnPropertyChanged(nameof(XAxis));
+            OnPropertyChanged(nameof(YAxis));
+            OnPropertyChanged(nameof(ZAxis));
+            OnPropertyChanged(nameof(Angle));
+
+            UpdatePlane(Angle);
+        }
+
+        private void UpdatePlane(double angle)
+        {
+            var rotation = new RotateTransform { Angle = angle };
+            Airplane.RenderTransform = rotation;
+        }
+
+        private static Angles CalculateAngles(AccelerometerReading reading)
         {
             var x = reading.AccelerationX;
             var y = reading.AccelerationY;
@@ -75,10 +95,14 @@ namespace SensorApp
             return new Angles(arx, ary, arz);
         }
 
-        private void UpdatePlane(double angle)
+        #region PropertyChanged
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        [NotifyPropertyChangedInvocator]
+        private void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
-            var rotation = new RotateTransform {Angle = angle};
-            airplane.RenderTransform = rotation;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+        #endregion
     }
 }

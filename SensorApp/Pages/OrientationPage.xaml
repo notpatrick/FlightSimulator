@@ -5,29 +5,30 @@
     xmlns:local="using:SensorApp.Pages"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d">
+    mc:Ignorable="d"
+    DataContext="{Binding RelativeSource={RelativeSource Self}}">
 
     <Grid Background="#FF0C0C0C">
         <StackPanel>
-            <TextBlock Text="OrientationSensor" Foreground="#FFEDE6E6"></TextBlock>
+            <TextBlock Width="75" Style="{StaticResource TextBase}" Text="OrientationSensor"/>
             <StackPanel Orientation="Horizontal">
-                <TextBlock x:Name="txt11" Foreground="#FFF2F2F2" FontSize="10" Width="32"/>
-                <TextBlock x:Name="txt12" Foreground="#FFF2F2F2" FontSize="10" Width="32"/>
-                <TextBlock x:Name="txt13" Foreground="#FFF2F2F2" FontSize="10" Width="32"/>
+                <TextBlock Width="26" Style="{StaticResource TextBase}" Text="{Binding Matrix.M11, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
+                <TextBlock Width="26" Style="{StaticResource TextBase}" Text="{Binding Matrix.M12, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
+                <TextBlock Width="26" Style="{StaticResource TextBase}" Text="{Binding Matrix.M13, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal">
-                <TextBlock x:Name="txt21" Foreground="#FFF2F2F2" FontSize="10" Width="32"/>
-                <TextBlock x:Name="txt22" Foreground="#FFF2F2F2" FontSize="10" Width="32"/>
-                <TextBlock x:Name="txt23" Foreground="#FFF2F2F2" FontSize="10" Width="32"/>
+                <TextBlock Width="26" Style="{StaticResource TextBase}" Text="{Binding Matrix.M21, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
+                <TextBlock Width="26" Style="{StaticResource TextBase}" Text="{Binding Matrix.M22, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
+                <TextBlock Width="26" Style="{StaticResource TextBase}" Text="{Binding Matrix.M23, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal">
-                <TextBlock x:Name="txt31" Foreground="#FFF2F2F2" FontSize="10" Width="32"/>
-                <TextBlock x:Name="txt32" Foreground="#FFF2F2F2" FontSize="10" Width="32"/>
-                <TextBlock x:Name="txt33" Foreground="#FFF2F2F2" FontSize="10" Width="32"/>
+                <TextBlock Width="26" Style="{StaticResource TextBase}" Text="{Binding Matrix.M31, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
+                <TextBlock Width="26" Style="{StaticResource TextBase}" Text="{Binding Matrix.M32, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
+                <TextBlock Width="26" Style="{StaticResource TextBase}" Text="{Binding Matrix.M33, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
             </StackPanel>
-            <TextBlock x:Name="txtAngle" Foreground="#FFF2F2F2" FontSize="16" TextAlignment="Right" Width="45" HorizontalAlignment="Left"/>
+            <TextBlock Width="26" Style="{StaticResource TextBase}" Text="{Binding Angle, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
         </StackPanel>
 
-        <Image Source="/../Assets/MyImages/airplane.png" Name="airplane" VerticalAlignment="Center" HorizontalAlignment="Center" Width="256" RenderTransformOrigin="0.5, 0.5"></Image>
+        <Image Name="Airplane" Source="/../Assets/MyImages/airplane.png" VerticalAlignment="Center" HorizontalAlignment="Center" Width="266" RenderTransformOrigin="0.5, 0.5"></Image>
     </Grid>
 </Page>

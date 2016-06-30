@@ -49,5 +49,10 @@ namespace SensorApp
         {
             this.Frame.Navigate(typeof(OrientationPage));
         }
+
+        private void FlyButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.Frame.Navigate(typeof(FlyPage));
+        }
     }
 }
