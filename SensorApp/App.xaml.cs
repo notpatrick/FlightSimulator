@@ -7,6 +7,8 @@ using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.Foundation.Metadata;
+using Windows.UI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -78,6 +80,15 @@ namespace SensorApp
                 Window.Current.Activate();
             }
             Windows.UI.Core.SystemNavigationManager.GetForCurrentView().BackRequested += App_BackRequested;
+            if (Windows.Foundation.Metadata.ApiInformation.IsTypePresent("Windows.UI.ViewManagement.StatusBar"))
+            {
+                HideBar();   
+            }
+        }
+
+        async void HideBar()
+        {
+            await Windows.UI.ViewManagement.StatusBar.GetForCurrentView().HideAsync();
         }
 
         /// <summary>

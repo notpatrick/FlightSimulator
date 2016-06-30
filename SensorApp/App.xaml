@@ -4,5 +4,14 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:SensorApp"
     RequestedTheme="Light">
+    <Application.Resources>
+        <Style x:Key="TextBase" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="8"/>
+            <Setter Property="Foreground" Value="MediumVioletRed"></Setter>
+            <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+        </Style>
+
+        <local:TwoDecimalsConverter x:Key="TwoDecimalsConverter"/>
+    </Application.Resources>
 
 </Application>
