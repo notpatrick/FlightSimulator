@@ -186,9 +186,9 @@ namespace SensorApp
                 {
                     newLeft = left - XSpeed;
                 }
-                CheckBackgroundOutOfBound(backgroundImage);
+
                 PositionInCanvas(backgroundImage, newLeft, newTop);
-                
+                CheckBackgroundOutOfBound(backgroundImage);
             }
             foreach (var skyImage in skyImages)
             {
@@ -203,9 +203,9 @@ namespace SensorApp
                 {
                     newLeft = left - XSpeed;
                 }
-                CheckSkyOutOfBound(skyImage);
+
                 PositionInCanvas(skyImage, newLeft, 0);
-                
+                CheckSkyOutOfBound(skyImage);
             }
         }
 
