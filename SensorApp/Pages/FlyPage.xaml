@@ -17,11 +17,11 @@
             <Canvas Name="MountainDrawArea"></Canvas>
         </Canvas>
         <Canvas Name="PlaneArea" >
-            <Image Name="Airplane" RenderTransformOrigin="0.5, 0.5" Height="90" Width="190" Source="/../Assets/MyImages/airplane-small.png"></Image>
+            <Image Name="Airplane" RenderTransformOrigin="0.5, 0.2" Height="90" Width="190" Source="/../Assets/MyImages/airplane-small.png"></Image>
         </Canvas>
         
         <StackPanel Name="DebugInfo">
-            <TextBlock Width="52" Style="{StaticResource TextBase}" Text="Inclinometer"/>
+            <TextBlock Width="52" Style="{StaticResource TextBase}" Text="Inclinometer" HorizontalAlignment="Left"/>
             <StackPanel Orientation="Horizontal">
                 <TextBlock Width="26" Style="{StaticResource TextBase}" Text="Pitch"/>
                 <TextBlock Width="26" Style="{StaticResource TextBase}" Text="{Binding Pitch, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
