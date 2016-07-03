@@ -30,6 +30,6 @@
             </StackPanel>
         </StackPanel>
 
-        <Image Name="Airplane" Source="/../Assets/MyImages/airplane.png" VerticalAlignment="Center" HorizontalAlignment="Center" Width="266" RenderTransformOrigin="0.5, 0.5"></Image>
+        <Image Name="Airplane" Source="/../Assets/MyImages/airplane-small.png" VerticalAlignment="Center" HorizontalAlignment="Center" Width="266" RenderTransformOrigin="0.5, 0.5"></Image>
     </Grid>
 </Page>

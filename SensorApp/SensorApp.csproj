@@ -127,8 +127,8 @@
   <ItemGroup>
     <Content Include="Assets\MyImages\airplane-small.png" />
     <Content Include="Assets\MyImages\big-sky.png" />
-    <Content Include="Assets\MyImages\pattern-inverted.png" />
-    <Content Include="Assets\MyImages\pattern.png" />
+    <Content Include="Assets\MyImages\ground.png" />
+    <Content Include="Assets\MyImages\mountains.png" />
     <Content Include="Properties\Default.rd.xml" />
     <Content Include="Assets\LockScreenLogo.scale-200.png" />
     <Content Include="Assets\SplashScreen.scale-200.png" />

@@ -29,6 +29,6 @@
             <TextBlock Width="26" Style="{StaticResource TextBase}" Text="{Binding Angle, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
         </StackPanel>
 
-        <Image Name="Airplane" Source="/../Assets/MyImages/airplane.png" VerticalAlignment="Center" HorizontalAlignment="Center" Width="266" RenderTransformOrigin="0.5, 0.5"></Image>
+        <Image Name="Airplane" Source="/../Assets/MyImages/airplane-small.png" VerticalAlignment="Center" HorizontalAlignment="Center" Width="266" RenderTransformOrigin="0.5, 0.5"></Image>
     </Grid>
 </Page>
