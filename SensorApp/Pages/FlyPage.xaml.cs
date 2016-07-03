@@ -160,7 +160,7 @@ namespace SensorApp {
             double left = (PlaneArea.ActualWidth - Airplane.ActualWidth) / 2;
             Canvas.SetLeft(Airplane, left);
 
-            double top = (PlaneArea.ActualHeight - Airplane.ActualHeight) / 3 * 2;
+            double top = (PlaneArea.ActualHeight - Airplane.ActualHeight) / 4 * 3;
             Canvas.SetTop(Airplane, top);
         }
 
@@ -426,8 +426,8 @@ namespace SensorApp {
         /// Limited growth function to calculate XSpeed from roll angle
         /// </summary>
         private static double GrowthFunction(double x) {
-            const int max = 15;
-            const double growthConst = -.028;
+            const double max = 12;
+            const double growthConst = -.018;
             x = Math.Abs(x);
             return max - max * Math.Pow(Math.E, growthConst * x);
         }
