@@ -32,7 +32,7 @@ namespace SensorApp {
             this.InitializeComponent();
             DisplayInformation.AutoRotationPreferences = DisplayOrientations.Landscape;
             // Set some values
-            YSpeed = 20;
+            YSpeed = 17;
             XSpeed = 0;
             Score = 0;
             _skyModificatorX = .02;
@@ -244,11 +244,10 @@ namespace SensorApp {
         private void InitMountains() {
             var image = new BitmapImage(new Uri("ms-appx:///../Assets/MyImages/mountains.png"));
             const double height = 110 * 0.5;
-            const double width = 1081 * 0.5;
+            const double width = 2098 * 0.5;
             _mountainImages = new[] {
                 new Image() {Height = height, Width = width, Source = image},
-                new Image() {Height = height, Width = width, Source = image},
-                new Image() {Height = height, Width = width, Source = image},
+                new Image() {Height = height, Width = width, Source = image}
             };
             var i = 0;
             foreach (var mountainImage in _mountainImages) {
@@ -270,15 +269,11 @@ namespace SensorApp {
             var height = _mountainImages[index].Height;
             switch (index) {
                 case 0:
-                    x = areaWidth / 2 - width;
-                    y = areaHeight - height;
-                    break;
-                case 1:
                     x = areaWidth / 2;
                     y = areaHeight - height;
                     break;
-                case 2:
-                    x = areaWidth / 2 + width;
+                case 1:
+                    x = areaWidth / 2 - width + 1;
                     y = areaHeight - height;
                     break;
                 default:
@@ -298,7 +293,7 @@ namespace SensorApp {
             var height = GroundDrawArea.ActualHeight;
             switch (index) {
                 case 0:
-                    x = -width / 2;
+                    x = -width / 2 +1;
                     y = -width + height / 2;
                     break;
                 case 1:
@@ -306,7 +301,7 @@ namespace SensorApp {
                     y = -width + height / 2;
                     break;
                 case 2:
-                    x = -width / 2;
+                    x = -width / 2 +1;
                     y = height / 2;
                     break;
                 case 3:
@@ -332,15 +327,15 @@ namespace SensorApp {
             var height = _skyImages[index].ActualHeight;
             switch (index) {
                 case 0:
-                    x = -width + areaWidth / 2;
-                    y = -height + areaHeight / 2;
+                    x = -width + areaWidth / 2 +1;
+                    y = -height + areaHeight / 2+1;
                     break;
                 case 1:
                     x = areaWidth / 2;
-                    y = -height + areaHeight / 2;
+                    y = -height + areaHeight / 2+1;
                     break;
                 case 2:
-                    x = -width + areaWidth / 2;
+                    x = -width + areaWidth / 2+1;
                     y = areaHeight / 2;
                     break;
                 case 3:
@@ -367,17 +362,17 @@ namespace SensorApp {
             var left = Canvas.GetLeft(groundImage);
 
             if (left > width) {
-                Canvas.SetLeft(groundImage, left - 2 * width);
+                Canvas.SetLeft(groundImage, left - 2 * width +2);
             }
             else if (left < -width) {
-                Canvas.SetLeft(groundImage, left + 2 * width);
+                Canvas.SetLeft(groundImage, left + 2 * width -2);
             }
 
-            if (top > width) {
-                Canvas.SetTop(groundImage, top - 2 * height);
+            if (top > height) {
+                Canvas.SetTop(groundImage, top - 2 * height + 2);
             }
-            else if (top < -width) {
-                Canvas.SetTop(groundImage, top + 2 * height);
+            else if (top < -height) {
+                Canvas.SetTop(groundImage, top + 2 * height - 2);
             }
         }
 
@@ -392,17 +387,17 @@ namespace SensorApp {
             var top = Canvas.GetTop(skyImage);
 
             if (left > width) {
-                Canvas.SetLeft(skyImage, left - 2 * width);
+                Canvas.SetLeft(skyImage, left - 2 * width + 2);
             }
             else if (left < -width) {
-                Canvas.SetLeft(skyImage, left + 2 * width);
+                Canvas.SetLeft(skyImage, left + 2 * width - 2);
             }
 
             if (top > height) {
-                Canvas.SetTop(skyImage, top - 2 * height);
+                Canvas.SetTop(skyImage, top - 2 * height + 2);
             }
             else if (top < -height) {
-                Canvas.SetTop(skyImage, top + 2 * height);
+                Canvas.SetTop(skyImage, top + 2 * height - 2);
             }
         }
 
@@ -414,11 +409,11 @@ namespace SensorApp {
             var width = mountainImage.Width;
             var left = Canvas.GetLeft(mountainImage);
 
-            if (left > 2 * width) {
-                Canvas.SetLeft(mountainImage, left - 3 * width);
+            if (left > width) {
+                Canvas.SetLeft(mountainImage, left - 2 * width + 2);
             }
             else if (left < -width) {
-                Canvas.SetLeft(mountainImage, left + 3 * width);
+                Canvas.SetLeft(mountainImage, left + 2 * width - 2);
             }
         }
 
