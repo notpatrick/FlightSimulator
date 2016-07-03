@@ -10,10 +10,10 @@
     DataContext="{Binding RelativeSource={RelativeSource Self}}">
 
     <Grid Background="#FF0C0C0C">
-        <Canvas Name="GroundDrawArea"/>
-        <Canvas Name="SkyDrawArea"/>
+        <Canvas Name="GroundDrawArea"></Canvas>
+        <Canvas Name="SkyDrawArea"></Canvas>
         <Canvas Name="PlaneArea">
-            <Image Name="Airplane" Source="/../Assets/MyImages/airplane-small.png"  RenderTransformOrigin="0.5, 0.5" Height="109" Width="256"></Image>
+            <Image Name="Airplane" RenderTransformOrigin="0.5, 0.5" Height="90" Width="190" Source="/../Assets/MyImages/airplane-small.png"></Image>
         </Canvas>
         
         <StackPanel>

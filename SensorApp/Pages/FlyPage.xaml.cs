@@ -74,10 +74,6 @@ namespace SensorApp {
             UpdateBackground();
         }
 
-        private void UpdatePlane(double angle) {
-            Airplane.RenderTransform = new RotateTransform {Angle = angle};
-        }
-
         private void InitPlane() {
             double left = (PlaneArea.ActualWidth - Airplane.ActualWidth) / 2;
             Canvas.SetLeft(Airplane, left);
@@ -100,9 +96,10 @@ namespace SensorApp {
 
         private void InitGround() {
             // Create array of ground images
+            var width = GroundDrawArea.ActualWidth;
             var image = new BitmapImage(new Uri("ms-appx:///../Assets/MyImages/pattern.png"));
             var imageInverted = new BitmapImage(new Uri("ms-appx:///../Assets/MyImages/pattern-inverted.png"));
-            var width = GroundDrawArea.ActualWidth;
+
             _groundImages = new[] {
                 new Image() {Width = width, Height = width, Source = image},
                 new Image() {Width = width, Height = width, Source = imageInverted},
@@ -174,6 +171,8 @@ namespace SensorApp {
                 CheckSkyOutOfBound(skyImage);
             }
         }
+
+        private void UpdatePlane(double angle) { Airplane.RenderTransform = new RotateTransform { Angle = angle }; }
 
         private void CheckGroundImageBounds(Image image) {
             // Move ground image to opposite side if it leaves screen
@@ -260,8 +259,7 @@ namespace SensorApp {
             PositionInCanvas(_skyImages[index], x, y);
         }
 
-        private static double GrowthFunction(double x)
-        {
+        private static double GrowthFunction(double x) {
             // Limited growth function to calculate XSpeed from roll
             const int max = 15;
             const double growthConst = -.025;
@@ -280,9 +278,7 @@ namespace SensorApp {
         public event PropertyChangedEventHandler PropertyChanged;
 
         [NotifyPropertyChangedInvocator]
-        private void OnPropertyChanged([CallerMemberName] string propertyName = null) {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
+        private void OnPropertyChanged([CallerMemberName] string propertyName = null) { PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName)); }
 
         #endregion
     }
