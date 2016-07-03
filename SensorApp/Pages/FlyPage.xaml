@@ -7,16 +7,20 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     Name="This"
+    UseLayoutRounding="False"
     DataContext="{Binding RelativeSource={RelativeSource Self}}">
 
     <Grid Background="#FF0C0C0C">
         <Canvas Name="GroundDrawArea"></Canvas>
-        <Canvas Name="SkyDrawArea"></Canvas>
-        <Canvas Name="PlaneArea">
+        <Canvas Name="SkyBox">
+            <Canvas Name="SkyDrawArea"></Canvas>
+            <Canvas Name="MountainDrawArea"></Canvas>
+        </Canvas>
+        <Canvas Name="PlaneArea" >
             <Image Name="Airplane" RenderTransformOrigin="0.5, 0.5" Height="90" Width="190" Source="/../Assets/MyImages/airplane-small.png"></Image>
         </Canvas>
         
-        <StackPanel>
+        <StackPanel Name="DebugInfo">
             <TextBlock Width="52" Style="{StaticResource TextBase}" Text="Inclinometer"/>
             <StackPanel Orientation="Horizontal">
                 <TextBlock Width="26" Style="{StaticResource TextBase}" Text="Pitch"/>
@@ -37,6 +41,13 @@
             <StackPanel Orientation="Horizontal">
                 <TextBlock Width="26" Style="{StaticResource TextBase}" Text="YSpeed"/>
                 <TextBlock Width="26" Style="{StaticResource TextBase}" Text="{Binding YSpeed, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
+            </StackPanel>
+        </StackPanel>
+        
+        <StackPanel>
+            <StackPanel Orientation="Vertical" HorizontalAlignment="Right" Width="100">
+                <TextBlock Style="{StaticResource TextScore}" TextAlignment="Right" Text="Score"/>
+                <TextBlock Style="{StaticResource TextScore}" TextAlignment="Right" Text="{Binding Score, Converter={StaticResource TruncateDoubleConverter}}" />
             </StackPanel>
         </StackPanel>
     </Grid>
