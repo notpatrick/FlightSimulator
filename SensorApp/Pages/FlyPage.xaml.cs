@@ -8,12 +8,11 @@ using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Media.Imaging;
 using SensorApp.Annotations;
 
 namespace SensorApp {
-    public sealed partial class FlyPage : Page, INotifyPropertyChanged {
+    public sealed partial class FlyPage : INotifyPropertyChanged {
         private readonly Inclinometer _inclinometer;
         private readonly double _skyModificatorX;
         private readonly double _skyModificatorY;
@@ -29,7 +28,7 @@ namespace SensorApp {
         public double Score { get; set; }
 
         public FlyPage() {
-            this.InitializeComponent();
+            InitializeComponent();
             DisplayInformation.AutoRotationPreferences = DisplayOrientations.Landscape;
             // Set some values
             YSpeed = 17;
@@ -88,7 +87,6 @@ namespace SensorApp {
         /// Main Update Method
         /// </summary>
         private void Update() {
-            double positionDelta = 0;
             // Rotate airplane
             Airplane.RenderTransform = new RotateTransform {Angle = -Roll};
             // Calculate XSpeed
@@ -107,7 +105,6 @@ namespace SensorApp {
                 else if (Roll < 0) {
                     newLeft = left - XSpeed;
                 }
-                positionDelta = positionDelta + Math.Abs(left - newLeft) + Math.Abs(top - newTop);
                 PositionInCanvas(groundImage, newLeft, newTop);
                 CheckGroundImageBounds(groundImage);
             }
@@ -144,6 +141,14 @@ namespace SensorApp {
                 PositionInCanvas(mountainImage, newLeft, top);
                 CheckMountainOutOfBound(mountainImage);
             }
+            CalculateScore();
+        }
+
+        /// <summary>
+        /// Calculates a score from speeds
+        /// </summary>
+        private void CalculateScore() {
+            var positionDelta = Math.Sqrt(Math.Pow(Math.Abs(XSpeed), 2) + Math.Pow(Math.Abs(YSpeed), 2));
             Score += positionDelta;
             OnPropertyChanged(nameof(Score));
         }
