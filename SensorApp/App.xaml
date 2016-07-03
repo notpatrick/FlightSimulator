@@ -8,7 +8,6 @@
         <Style x:Key="TextBase" TargetType="TextBlock">
             <Setter Property="FontSize" Value="8"/>
             <Setter Property="Foreground" Value="Magenta"></Setter>
-            <Setter Property="HorizontalAlignment" Value="Left"></Setter>
         </Style>
         <Style x:Key="TextScore" TargetType="TextBlock">
             <Setter Property="FontSize" Value="15"/>
