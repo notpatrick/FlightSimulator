@@ -8,35 +8,25 @@ using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
+using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Media.Imaging;
 using SensorApp.Annotations;
+using SensorApp.Classes;
 
 namespace SensorApp {
     public sealed partial class FlyPage : INotifyPropertyChanged {
         private readonly Inclinometer _inclinometer;
-        private readonly double _skyModificatorX;
-        private readonly double _skyModificatorY;
-        private readonly double _mountainModificatorX;
         private Image[] _groundImages;
         private Image[] _skyImages;
         private Image[] _mountainImages;
-        public double Pitch { get; set; }
-        public double Roll { get; set; }
-        public double Yaw { get; set; }
-        public double XSpeed { get; set; }
-        public double YSpeed { get; set; }
-        public double Score { get; set; }
+
+        public GameState State { get; set; }
 
         public FlyPage() {
             InitializeComponent();
             DisplayInformation.AutoRotationPreferences = DisplayOrientations.Landscape;
-            // Set some values
-            YSpeed = 17;
-            XSpeed = 0;
-            Score = 0;
-            _skyModificatorX = .02;
-            _skyModificatorY = .008;
-            _mountainModificatorX = .05;
+            var id = MyHelpers.GetHardwareId();
+
             // Inizialize inclinometer
             _inclinometer = Inclinometer.GetDefault();
             if (_inclinometer != null) {
@@ -47,16 +37,22 @@ namespace SensorApp {
                 _inclinometer.ReadingChanged += ReadingChanged;
             }
             // Call UI initialization methods on Loaded
-            Loaded += delegate {
+            Loaded += async delegate {
                 InitCanvas();
                 InitPlane();
                 InitGround();
                 InitSky();
                 InitMountains();
-#if !DEBUG
-                DebugInfo.Visibility = Visibility.Collapsed;
-#endif
+
+                var fileExist = await MyHelpers.CheckFile(id);
+                if (fileExist) {
+                    State = await MyHelpers.Load(id);
+                }
+                else {
+                    State = new GameState();
+                }
             };
+            Unloaded += delegate { MyHelpers.Save(State, id); };
         }
 
         /// <summary>
@@ -73,14 +69,12 @@ namespace SensorApp {
         /// Update the view with new valus from Inclinometer reading
         /// </summary>
         private void UpdateView(InclinometerReading reading) {
-            Pitch = reading.PitchDegrees;
-            Roll = reading.RollDegrees;
-            Yaw = reading.YawDegrees;
-            OnPropertyChanged(nameof(Pitch));
-            OnPropertyChanged(nameof(Roll));
-            OnPropertyChanged(nameof(Yaw));
-
-            Update();
+            State.Pitch = reading.PitchDegrees;
+            State.Roll = reading.RollDegrees;
+            State.Yaw = reading.YawDegrees;
+            OnPropertyChanged(nameof(State));
+            if (State.IsRunning)
+                Update();
         }
 
         /// <summary>
@@ -88,38 +82,39 @@ namespace SensorApp {
         /// </summary>
         private void Update() {
             // Rotate airplane
-            Airplane.RenderTransform = new RotateTransform {Angle = -Roll};
+            Airplane.RenderTransform = new RotateTransform {Angle = -State.Roll};
             // Calculate XSpeed
-            XSpeed = Math.Round(GrowthFunction(Roll), 1);
-            OnPropertyChanged(nameof(XSpeed));
+            State.XSpeed = Math.Round(GrowthFunction(State.Roll), 1);
+            OnPropertyChanged(nameof(State));
             // Update each ground image
             foreach (var groundImage in _groundImages) {
                 var top = Canvas.GetTop(groundImage);
                 var left = Canvas.GetLeft(groundImage);
-                var newTop = top + YSpeed;
+                var newTop = top + State.YSpeed;
                 var newLeft = left;
 
-                if (Roll > 0) {
-                    newLeft = left + XSpeed;
+                if (State.Roll > 0) {
+                    newLeft = left + State.XSpeed;
                 }
-                else if (Roll < 0) {
-                    newLeft = left - XSpeed;
+                else if (State.Roll < 0) {
+                    newLeft = left - State.XSpeed;
                 }
                 PositionInCanvas(groundImage, newLeft, newTop);
                 CheckGroundOutOfBound(groundImage);
+                State.Position = new Point(State.Position.X + left - newLeft, State.Position.Y + top - newTop);
             }
             // Update each sky image
             foreach (var skyImage in _skyImages) {
                 var top = Canvas.GetTop(skyImage);
                 var left = Canvas.GetLeft(skyImage);
-                var newTop = top - YSpeed * _skyModificatorY;
+                var newTop = top - State.YSpeed * GameConstants.SkyCoeffY;
                 var newLeft = left;
 
-                if (Roll > 0) {
-                    newLeft = left + XSpeed * _skyModificatorX;
+                if (State.Roll > 0) {
+                    newLeft = left + State.XSpeed * GameConstants.SkyCoeffX;
                 }
-                else if (Roll < 0) {
-                    newLeft = left - XSpeed * _skyModificatorX;
+                else if (State.Roll < 0) {
+                    newLeft = left - State.XSpeed * GameConstants.SkyCoeffX;
                 }
                 PositionInCanvas(skyImage, newLeft, newTop);
                 CheckSkyOutOfBound(skyImage);
@@ -130,11 +125,11 @@ namespace SensorApp {
                 var top = Canvas.GetTop(mountainImage);
                 var newLeft = left;
 
-                if (Roll > 0) {
-                    newLeft = left + XSpeed * _mountainModificatorX;
+                if (State.Roll > 0) {
+                    newLeft = left + State.XSpeed * GameConstants.MountainCoeffX;
                 }
-                else if (Roll < 0) {
-                    newLeft = left - XSpeed * _mountainModificatorX;
+                else if (State.Roll < 0) {
+                    newLeft = left - State.XSpeed * GameConstants.MountainCoeffX;
                 }
                 PositionInCanvas(mountainImage, newLeft, top);
                 CheckMountainOutOfBound(mountainImage);
@@ -146,9 +141,9 @@ namespace SensorApp {
         /// Calculates a score from speeds
         /// </summary>
         private void UpdateScore() {
-            var positionDelta = Math.Sqrt(Math.Pow(Math.Abs(XSpeed), 2) + Math.Pow(Math.Abs(YSpeed), 2));
-            Score += positionDelta;
-            OnPropertyChanged(nameof(Score));
+            var positionDelta = Math.Sqrt(Math.Pow(Math.Abs(State.XSpeed), 2) + Math.Pow(Math.Abs(State.YSpeed), 2));
+            State.Score += positionDelta;
+            OnPropertyChanged(nameof(State));
         }
 
         /// <summary>
@@ -421,13 +416,12 @@ namespace SensorApp {
         }
 
         /// <summary>
-        /// Limited growth function to calculate XSpeed from roll angle
+        /// Linear growth function to calculate XSpeed from roll angle
         /// </summary>
         private static double GrowthFunction(double x) {
-            const double max = 12;
-            const double growthConst = -.018;
             x = Math.Abs(x);
-            return max - max * Math.Pow(Math.E, growthConst * x);
+            var val = 15d / 60 * x;
+            return val < 15 ? val : 15;
         }
 
         /// <summary>

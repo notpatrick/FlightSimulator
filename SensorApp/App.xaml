@@ -5,7 +5,7 @@
     xmlns:local="using:SensorApp"
     RequestedTheme="Light">
     <Application.Resources>
-        <Style x:Key="TextBase" TargetType="TextBlock">
+        <Style x:Key="DebugText" TargetType="TextBlock">
             <Setter Property="FontSize" Value="8"/>
             <Setter Property="Foreground" Value="Magenta"></Setter>
         </Style>
@@ -13,7 +13,7 @@
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="Foreground" Value="Black"></Setter>
         </Style>
-
+        
         <local:TwoDecimalsConverter x:Key="TwoDecimalsConverter"/>
         <local:TruncateDoubleConverter x:Key="TruncateDoubleConverter"/>
     </Application.Resources>

@@ -7,10 +7,9 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     Name="This"
-    UseLayoutRounding="False"
     DataContext="{Binding RelativeSource={RelativeSource Self}}">
 
-    <Grid Background="#FF0C0C0C">
+    <Grid Background="#bbb">
         <Canvas Name="GroundDrawArea"></Canvas>
         <Canvas Name="SkyBox">
             <Canvas Name="SkyDrawArea"></Canvas>
@@ -19,35 +18,43 @@
         <Canvas Name="PlaneArea" >
             <Image Name="Airplane" RenderTransformOrigin="0.5, 0.2" Height="90" Width="190" Source="/../Assets/MyImages/airplane-small.png"></Image>
         </Canvas>
-        
-        <StackPanel Name="DebugInfo">
-            <TextBlock Width="52" Style="{StaticResource TextBase}" Text="Inclinometer" HorizontalAlignment="Left"/>
+
+        <StackPanel Name="DebugInfo" HorizontalAlignment="Right" Margin="0,0,2,0">
+            <TextBlock Width="52" Style="{StaticResource DebugText}" Text="Inclinometer" HorizontalAlignment="Left"/>
             <StackPanel Orientation="Horizontal">
-                <TextBlock Width="26" Style="{StaticResource TextBase}" Text="Pitch"/>
-                <TextBlock Width="26" Style="{StaticResource TextBase}" Text="{Binding Pitch, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
+                <TextBlock Width="26" Style="{StaticResource DebugText}" Text="Pitch"/>
+                <TextBlock Width="26" Style="{StaticResource DebugText}" Text="{Binding State.Pitch, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal">
-                <TextBlock Width="26" Style="{StaticResource TextBase}" Text="Roll"/>
-                <TextBlock Width="26" Style="{StaticResource TextBase}" Text="{Binding Roll, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
+                <TextBlock Width="26" Style="{StaticResource DebugText}" Text="Roll"/>
+                <TextBlock Width="26" Style="{StaticResource DebugText}" Text="{Binding State.Roll, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal">
-                <TextBlock Width="26" Style="{StaticResource TextBase}" Text="Yaw"/>
-                <TextBlock Width="26" Style="{StaticResource TextBase}" Text="{Binding Yaw, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
+                <TextBlock Width="26" Style="{StaticResource DebugText}" Text="Yaw"/>
+                <TextBlock Width="26" Style="{StaticResource DebugText}" Text="{Binding State.Yaw, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal">
-                <TextBlock Width="26" Style="{StaticResource TextBase}" Text="XSpeed"/>
-                <TextBlock Width="26" Style="{StaticResource TextBase}" Text="{Binding XSpeed, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
+                <TextBlock Width="26" Style="{StaticResource DebugText}" Text="XSpeed"/>
+                <TextBlock Width="26" Style="{StaticResource DebugText}" Text="{Binding State.XSpeed, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal">
-                <TextBlock Width="26" Style="{StaticResource TextBase}" Text="YSpeed"/>
-                <TextBlock Width="26" Style="{StaticResource TextBase}" Text="{Binding YSpeed, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
+                <TextBlock Width="26" Style="{StaticResource DebugText}" Text="YSpeed"/>
+                <TextBlock Width="26" Style="{StaticResource DebugText}" Text="{Binding State.YSpeed, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Width="10" Style="{StaticResource DebugText}" Text="X"/>
+                <TextBlock Width="42" Style="{StaticResource DebugText}" Text="{Binding State.Position.X, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Width="10" Style="{StaticResource DebugText}" Text="Y"/>
+                <TextBlock Width="42" Style="{StaticResource DebugText}" Text="{Binding State.Position.Y, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
             </StackPanel>
         </StackPanel>
         
-        <StackPanel>
-            <StackPanel Orientation="Vertical" HorizontalAlignment="Right" Width="100">
-                <TextBlock Style="{StaticResource TextScore}" TextAlignment="Right" Text="Score"/>
-                <TextBlock Style="{StaticResource TextScore}" TextAlignment="Right" Text="{Binding Score, Converter={StaticResource TruncateDoubleConverter}}" />
+        <StackPanel Name="GameInfo" HorizontalAlignment="Left" Margin="2,0,0,0">
+            <StackPanel Orientation="Vertical" HorizontalAlignment="Left" Width="100">
+                <TextBlock Style="{StaticResource TextScore}" TextAlignment="Left" Text="Score"/>
+                <TextBlock Style="{StaticResource TextScore}" TextAlignment="Left" Text="{Binding State.Score, Converter={StaticResource TruncateDoubleConverter}}" />
             </StackPanel>
         </StackPanel>
     </Grid>
