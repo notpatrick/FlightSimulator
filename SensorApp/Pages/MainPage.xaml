@@ -16,9 +16,6 @@
             </StackPanel.Resources>
             <TextBlock Text="SensorApp" Foreground="#2d89ef" HorizontalAlignment="Center" FontSize="42"></TextBlock>
             <Button Height="64" Width="256" Background="#2d89ef" Name="FlyButton" Click="FlyButton_Click" >Fly!</Button>
-            <Button Height="64" Width="256" Background="#2d89ef" Name="AccelerometerButton" Click="AccelerometerButton_Click">Accelerometer Test</Button>
-            <Button Height="64" Width="256" Background="#2d89ef" Name="InclinometerButton" Click="InclinometerButton_Click" >Inclinometer Test</Button>
-            <Button Height="64" Width="256" Background="#2d89ef" Name="OrientationButton" Click="OrientationButton_Click" >OrientationtSensor Test</Button>
         </StackPanel>
     </Grid>
 </Page>
