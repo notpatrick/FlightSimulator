@@ -19,12 +19,11 @@
         </Grid.Background>
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
             <TextBlock Text="AirplaneSimulator" Style="{StaticResource TextAirport}" />
-            <Border Style="{StaticResource BorderButton}" Padding="0">
-                <Border.RenderTransform>
-                    <ScaleTransform x:Name="ButtonScale" ScaleY="1" ScaleX="1" />
-                </Border.RenderTransform>
-                <Button Style="{StaticResource ButtonMain}" Name="FlyButton" Click="FlyButton_Click" Content="Fly!" />
-            </Border>
+            <Button Style="{StaticResource ButtonMain}" Name="FlyButton" Click="FlyButton_Click" Content="Fly!">
+                <Button.RenderTransform>
+                    <ScaleTransform x:Name="ButtonScale" ScaleY="1" ScaleX="1" ></ScaleTransform>
+                </Button.RenderTransform>
+            </Button>
         </StackPanel>
     </Grid>
 </Page>

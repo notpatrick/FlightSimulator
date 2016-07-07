@@ -36,12 +36,11 @@
             </Grid.Background>
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                 <TextBlock Text="{Binding State.Location.Name}" Style="{StaticResource TextAirport}" />
-                <Border Style="{StaticResource BorderButton}">
-                    <Border.RenderTransform>
+                <Button Style="{StaticResource ButtonMain}" Name="StartButton" Click="StartButton_Click" Content="Lift Off!">
+                    <Button.RenderTransform>
                         <ScaleTransform x:Name="ButtonScale" ScaleY="1" ScaleX="1" />
-                    </Border.RenderTransform>
-                    <Button Style="{StaticResource ButtonMain}" Name="StartButton" Click="StartButton_Click" Content="Lift Off!" />
-                </Border>
+                    </Button.RenderTransform>
+                </Button>
             </StackPanel>
         </Grid>
         <Grid Name="UpdateWindow" Background="#000" IsHitTestVisible="False">
