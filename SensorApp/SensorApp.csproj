@@ -95,25 +95,20 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Classes\Angles.cs" />
+    <Compile Include="Classes\GameConstants.cs" />
+    <Compile Include="Classes\GameState.cs" />
+    <Compile Include="Classes\Location.cs" />
+    <Compile Include="Classes\MyHelpers.cs" />
     <Compile Include="Converter\MyConverters.cs" />
-    <Compile Include="Pages\AccelerometerPage.xaml.cs">
-      <DependentUpon>AccelerometerPage.xaml</DependentUpon>
-    </Compile>
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Classes\Helpers.cs" />
     <Compile Include="Pages\FlyPage.xaml.cs">
       <DependentUpon>FlyPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Pages\InclinometerPage.xaml.cs">
-      <DependentUpon>InclinometerPage.xaml</DependentUpon>
-    </Compile>
     <Compile Include="Pages\MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Pages\OrientationPage.xaml.cs">
-      <DependentUpon>OrientationPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Properties\Annotations.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -128,7 +123,13 @@
     <Content Include="Assets\MyImages\airplane-small.png" />
     <Content Include="Assets\MyImages\big-sky.png" />
     <Content Include="Assets\MyImages\ground.png" />
+    <Content Include="Assets\MyImages\Locations\airport-frankfurt.png" />
+    <Content Include="Assets\MyImages\Locations\airport-munich.png" />
+    <Content Include="Assets\MyImages\Locations\airport-paris.png" />
+    <Content Include="Assets\MyImages\Locations\airport-rome.png" />
     <Content Include="Assets\MyImages\mountains.png" />
+    <Content Include="Assets\MyImages\screenshot1.png" />
+    <Content Include="Assets\MyImages\screenshot2.png" />
     <Content Include="Properties\Default.rd.xml" />
     <Content Include="Assets\LockScreenLogo.scale-200.png" />
     <Content Include="Assets\SplashScreen.scale-200.png" />
@@ -143,25 +144,13 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Page Include="Pages\AccelerometerPage.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Include="Pages\FlyPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Pages\InclinometerPage.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Include="Pages\MainPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Pages\OrientationPage.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>

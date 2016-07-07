@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Windows.Devices.Sensors;
 using Windows.Foundation;
@@ -10,59 +11,94 @@ using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
 using SensorApp.Annotations;
+using SensorApp.Classes;
 
 namespace SensorApp {
     public sealed partial class FlyPage : INotifyPropertyChanged {
-        private readonly Inclinometer _inclinometer;
-        private readonly double _skyModificatorX;
-        private readonly double _skyModificatorY;
-        private readonly double _mountainModificatorX;
+        private readonly Accelerometer _accelerometer;
+        private readonly string _deviceId;
         private Image[] _groundImages;
         private Image[] _skyImages;
         private Image[] _mountainImages;
-        public double Pitch { get; set; }
-        public double Roll { get; set; }
-        public double Yaw { get; set; }
-        public double XSpeed { get; set; }
-        public double YSpeed { get; set; }
-        public double Score { get; set; }
+
+        public GameState State { get; set; }
 
         public FlyPage() {
             InitializeComponent();
             DisplayInformation.AutoRotationPreferences = DisplayOrientations.Landscape;
-            // Set some values
-            YSpeed = 17;
-            XSpeed = 0;
-            Score = 0;
-            _skyModificatorX = .02;
-            _skyModificatorY = .008;
-            _mountainModificatorX = .05;
-            // Inizialize inclinometer
-            _inclinometer = Inclinometer.GetDefault();
-            if (_inclinometer != null) {
-                var minReportInterval = _inclinometer.MinimumReportInterval;
-                var reportInterval = minReportInterval > 16 ? minReportInterval : 16;
-                _inclinometer.ReportInterval = reportInterval;
-                _inclinometer.ReadingTransform = DisplayOrientations.Landscape;
-                _inclinometer.ReadingChanged += ReadingChanged;
-            }
-            // Call UI initialization methods on Loaded
+            _deviceId = MyHelpers.GetHardwareId();
+            _accelerometer = Accelerometer.GetDefault();
+
             Loaded += delegate {
-                InitCanvas();
-                InitPlane();
-                InitGround();
-                InitSky();
-                InitMountains();
-#if !DEBUG
-                DebugInfo.Visibility = Visibility.Collapsed;
-#endif
+                InitStoryboards();
+                InitUpdateWindow();
+                State = new GameState();
+                if (_accelerometer != null) {
+                    var minReportInterval = _accelerometer.MinimumReportInterval;
+                    var reportInterval = minReportInterval > 16 ? minReportInterval : 16;
+                    _accelerometer.ReportInterval = reportInterval;
+                    _accelerometer.ReadingTransform = DisplayOrientations.Landscape;
+                    StartUpdate();
+                }
             };
+            Unloaded += delegate { StopUpdate(); };
+        }
+
+        private void InitUpdateWindow() {
+            InitCanvas();
+            InitPlane();
+            InitGround();
+            InitSky();
+            InitMountains();
+        }
+
+        private void InitStoryboards() {
+            // Button pulse loop
+            EventHandler<object> lambdaButton = (sender, o) => { PulseButton.Begin(); };
+            // When Update screen gets shown
+            EventHandler<object> lambdaShowUpdate = (sender, o) => { _accelerometer.ReadingChanged += ReadingChanged; };
+            ShowUpdateStoryboard.Completed += lambdaShowUpdate;
+            // When Pause screen gets shown
+            EventHandler<object> lambdaShowPause = (sender, o) => {
+                PulseButton.Completed += lambdaButton;
+                PulseButton.Begin();
+            };
+            ShowPauseStoryboard.Completed += lambdaShowPause;
+            // When update screen gets hidden
+            EventHandler<object> lambdaHideUpdate = (sender, o) => { ShowPauseStoryboard.Begin(); };
+            HideUpdateStoryboard.Completed += lambdaHideUpdate;
+            // When pause screen gets hidden
+            EventHandler<object> lambdaHidePause = (sender, o) => {
+                PulseButton.Completed -= lambdaButton;
+                ShowUpdateStoryboard.Begin();
+            };
+            HidePauseStoryboard.Completed += lambdaHidePause;
+        }
+
+        private void StopUpdate() {
+            _accelerometer.ReadingChanged -= ReadingChanged;
+            HideUpdateStoryboard.Begin();
+            MyHelpers.Save(State, _deviceId);
+        }
+
+        private async void StartUpdate() {
+            var fileExist = await MyHelpers.CheckFile(_deviceId);
+            if (fileExist) {
+                State = await MyHelpers.Load(_deviceId);
+            }
+            State.ResetSpeeds().ResetAngles().GetNextLocation();
+            HidePauseStoryboard.Begin();
+        }
+
+        private void StartButton_Click(object sender, RoutedEventArgs e) {
+            State.ResetSpeeds().ResetAngles();
+            StartUpdate();
         }
 
         /// <summary>
         /// Call UpdateView on every sensor reading update
         /// </summary>
-        private async void ReadingChanged(object sender, InclinometerReadingChangedEventArgs e) {
+        private async void ReadingChanged(object sender, AccelerometerReadingChangedEventArgs e) {
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
                 var reading = e.Reading;
                 UpdateView(reading);
@@ -72,14 +108,8 @@ namespace SensorApp {
         /// <summary>
         /// Update the view with new valus from Inclinometer reading
         /// </summary>
-        private void UpdateView(InclinometerReading reading) {
-            Pitch = reading.PitchDegrees;
-            Roll = reading.RollDegrees;
-            Yaw = reading.YawDegrees;
-            OnPropertyChanged(nameof(Pitch));
-            OnPropertyChanged(nameof(Roll));
-            OnPropertyChanged(nameof(Yaw));
-
+        private void UpdateView(AccelerometerReading reading) {
+            State.Angles = Angles.CalculateAngles(reading);
             Update();
         }
 
@@ -87,41 +117,47 @@ namespace SensorApp {
         /// Main Update Method
         /// </summary>
         private void Update() {
+            // Calculate SpeedX and SpeedY
+            CalculateSpeedY();
+            CalculateSpeedX();
+            // Check for Stop
+            if (State.SpeedY < GameConstants.MinSpeedY) {
+                StopUpdate();
+                return;
+            }
             // Rotate airplane
-            Airplane.RenderTransform = new RotateTransform {Angle = -Roll};
-            // Calculate XSpeed
-            XSpeed = Math.Round(GrowthFunction(Roll), 1);
-            OnPropertyChanged(nameof(XSpeed));
+            Airplane.RenderTransform = new RotateTransform {Angle = -State.Angles.X};
             // Update each ground image
             foreach (var groundImage in _groundImages) {
                 var top = Canvas.GetTop(groundImage);
                 var left = Canvas.GetLeft(groundImage);
-                var newTop = top + YSpeed;
+                var newTop = top + State.SpeedY;
                 var newLeft = left;
 
-                if (Roll > 0) {
-                    newLeft = left + XSpeed;
+                if (State.Angles.X > 0) {
+                    newLeft = left + State.SpeedX;
                 }
-                else if (Roll < 0) {
-                    newLeft = left - XSpeed;
+                else if (State.Angles.X < 0) {
+                    newLeft = left - State.SpeedX;
                 }
+
                 PositionInCanvas(groundImage, newLeft, newTop);
-                CheckGroundImageBounds(groundImage);
+                CheckGroundOutOfBound(groundImage);
+                State.Position = new Point(State.Position.X + left - newLeft, State.Position.Y + top - newTop);
             }
             // Update each sky image
             foreach (var skyImage in _skyImages) {
+                var top = Canvas.GetTop(skyImage);
                 var left = Canvas.GetLeft(skyImage);
+                var newTop = top - State.SpeedY * GameConstants.SkyCoeffY;
                 var newLeft = left;
 
-                if (Roll > 0) {
-                    newLeft = left + XSpeed * _skyModificatorX;
+                if (State.Angles.X > 0) {
+                    newLeft = left + State.SpeedX * GameConstants.SkyCoeffX;
                 }
-                else if (Roll < 0) {
-                    newLeft = left - XSpeed * _skyModificatorX;
+                else if (State.Angles.X < 0) {
+                    newLeft = left - State.SpeedX * GameConstants.SkyCoeffX;
                 }
-
-                var top = Canvas.GetTop(skyImage);
-                var newTop = top - YSpeed * _skyModificatorY;
                 PositionInCanvas(skyImage, newLeft, newTop);
                 CheckSkyOutOfBound(skyImage);
             }
@@ -131,36 +167,35 @@ namespace SensorApp {
                 var top = Canvas.GetTop(mountainImage);
                 var newLeft = left;
 
-                if (Roll > 0) {
-                    newLeft = left + XSpeed * _mountainModificatorX;
+                if (State.Angles.X > 0) {
+                    newLeft = left + State.SpeedX * GameConstants.MountainCoeffX;
                 }
-                else if (Roll < 0) {
-                    newLeft = left - XSpeed * _mountainModificatorX;
+                else if (State.Angles.X < 0) {
+                    newLeft = left - State.SpeedX * GameConstants.MountainCoeffX;
                 }
-
                 PositionInCanvas(mountainImage, newLeft, top);
                 CheckMountainOutOfBound(mountainImage);
             }
-            CalculateScore();
+            UpdateScore();
+            OnPropertyChanged(nameof(State));
         }
 
         /// <summary>
         /// Calculates a score from speeds
         /// </summary>
-        private void CalculateScore() {
-            var positionDelta = Math.Sqrt(Math.Pow(Math.Abs(XSpeed), 2) + Math.Pow(Math.Abs(YSpeed), 2));
-            Score += positionDelta;
-            OnPropertyChanged(nameof(Score));
+        private void UpdateScore() {
+            var positionDelta = Math.Sqrt(Math.Pow(Math.Abs(State.SpeedX), 2) + Math.Pow(Math.Abs(State.SpeedY), 2));
+            State.Score += positionDelta;
         }
 
         /// <summary>
         /// Set plane position on canvas
         /// </summary>
         private void InitPlane() {
-            double left = (PlaneArea.ActualWidth - Airplane.ActualWidth) / 2;
+            var left = (PlaneArea.ActualWidth - Airplane.ActualWidth) * 0.5;
             Canvas.SetLeft(Airplane, left);
 
-            double top = (PlaneArea.ActualHeight - Airplane.ActualHeight) / 3 * 2;
+            var top = (PlaneArea.ActualHeight - Airplane.ActualHeight) * 0.75;
             Canvas.SetTop(Airplane, top);
         }
 
@@ -182,7 +217,7 @@ namespace SensorApp {
                 Rect = new Rect {
                     X = 0,
                     Y = 0,
-                    Height = This.ActualHeight / 2,
+                    Height = This.ActualHeight * 0.5,
                     Width = This.ActualWidth
                 }
             };
@@ -196,7 +231,7 @@ namespace SensorApp {
             SkyDrawArea.Height = This.ActualHeight;
             SkyDrawArea.Width = This.ActualWidth;
             // Set mountain canvas size
-            MountainDrawArea.Height = This.ActualHeight / 2;
+            MountainDrawArea.Height = This.ActualHeight * 0.5;
             MountainDrawArea.Width = This.ActualWidth;
         }
 
@@ -264,7 +299,7 @@ namespace SensorApp {
         }
 
         /// <summary>
-        /// Method for initial mountain image positioning
+        /// Initial mountain image positioning
         /// </summary>
         private void InitMountainImage(int index) {
             double x, y;
@@ -274,11 +309,11 @@ namespace SensorApp {
             var height = _mountainImages[index].Height;
             switch (index) {
                 case 0:
-                    x = areaWidth / 2;
+                    x = areaWidth * 0.5;
                     y = areaHeight - height;
                     break;
                 case 1:
-                    x = areaWidth / 2 - width + 1;
+                    x = areaWidth * 0.5 - width + 1;
                     y = areaHeight - height;
                     break;
                 default:
@@ -290,7 +325,7 @@ namespace SensorApp {
         }
 
         /// <summary>
-        /// Method for initial ground image positioning
+        /// Initial ground image positioning
         /// </summary>
         private void InitGroundImage(int index) {
             double x, y;
@@ -298,20 +333,20 @@ namespace SensorApp {
             var height = GroundDrawArea.ActualHeight;
             switch (index) {
                 case 0:
-                    x = -width / 2 +1;
-                    y = -width + height / 2;
+                    x = -width * 0.5 + 1;
+                    y = -width + height * 0.5;
                     break;
                 case 1:
-                    x = width / 2;
-                    y = -width + height / 2;
+                    x = width * 0.5;
+                    y = -width + height * 0.5;
                     break;
                 case 2:
-                    x = -width / 2 +1;
-                    y = height / 2;
+                    x = -width * 0.5 + 1;
+                    y = height * 0.5;
                     break;
                 case 3:
-                    x = width / 2;
-                    y = height / 2;
+                    x = width * 0.5;
+                    y = height * 0.5;
                     break;
                 default:
                     x = 0;
@@ -322,7 +357,7 @@ namespace SensorApp {
         }
 
         /// <summary>
-        /// Method for initial sky image positioning
+        /// Initial sky image positioning
         /// </summary>
         private void InitSkyImage(int index) {
             double x, y;
@@ -332,20 +367,20 @@ namespace SensorApp {
             var height = _skyImages[index].ActualHeight;
             switch (index) {
                 case 0:
-                    x = -width + areaWidth / 2 +1;
-                    y = -height + areaHeight / 2+1;
+                    x = -width + areaWidth * 0.5 + 1;
+                    y = -height + areaHeight * 0.5 + 1;
                     break;
                 case 1:
-                    x = areaWidth / 2;
-                    y = -height + areaHeight / 2+1;
+                    x = areaWidth * 0.5;
+                    y = -height + areaHeight * 0.5 + 1;
                     break;
                 case 2:
-                    x = -width + areaWidth / 2+1;
-                    y = areaHeight / 2;
+                    x = -width + areaWidth * 0.5 + 1;
+                    y = areaHeight * 0.5;
                     break;
                 case 3:
-                    x = areaWidth / 2;
-                    y = areaHeight / 2;
+                    x = areaWidth * 0.5;
+                    y = areaHeight * 0.5;
                     break;
                 default:
                     x = 0;
@@ -358,7 +393,7 @@ namespace SensorApp {
         /// <summary>
         /// Check if ground image is out of bounds and move to opposite side of canvas
         /// </summary>
-        private static void CheckGroundImageBounds(Image groundImage) {
+        private static void CheckGroundOutOfBound(Image groundImage) {
             // Move ground image to opposite side if it leaves screen
             var width = groundImage.Width;
             var height = groundImage.Height;
@@ -367,10 +402,10 @@ namespace SensorApp {
             var left = Canvas.GetLeft(groundImage);
 
             if (left > width) {
-                Canvas.SetLeft(groundImage, left - 2 * width +2);
+                Canvas.SetLeft(groundImage, left - 2 * width + 2);
             }
             else if (left < -width) {
-                Canvas.SetLeft(groundImage, left + 2 * width -2);
+                Canvas.SetLeft(groundImage, left + 2 * width - 2);
             }
 
             if (top > height) {
@@ -423,13 +458,21 @@ namespace SensorApp {
         }
 
         /// <summary>
-        /// Limited growth function to calculate XSpeed from roll angle
+        /// Linear growth function to calculate SpeedX from roll angle
         /// </summary>
-        private static double GrowthFunction(double x) {
-            const int max = 15;
-            const double growthConst = -.028;
-            x = Math.Abs(x);
-            return max - max * Math.Pow(Math.E, growthConst * x);
+        private void CalculateSpeedX() {
+            var x = Math.Abs(State.Angles.X);
+            var value = GameConstants.MaxSpeedX / 60 * x;
+            var limitedValue = value < GameConstants.MaxSpeedX ? value : GameConstants.MaxSpeedX;
+            State.SpeedX = Math.Round(limitedValue * State.SpeedY / GameConstants.MaxSpeedY, 2);
+        }
+
+        private void CalculateSpeedY() {
+            const double growconst = .002;
+            var x = State.Angles.Z > GameConstants.VerticalTolerance || State.Angles.Z < -GameConstants.VerticalTolerance ? State.Angles.Z : 0;
+            var delta = Math.Pow(Math.E, growconst * x) - 1;
+            var newSpeed = Math.Round(State.SpeedY + delta, 2);
+            State.SpeedY = newSpeed > GameConstants.MaxSpeedY ? GameConstants.MaxSpeedY : newSpeed;
         }
 
         /// <summary>
