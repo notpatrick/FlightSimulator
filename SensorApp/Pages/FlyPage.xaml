@@ -8,78 +8,110 @@
     mc:Ignorable="d"
     Name="This"
     DataContext="{Binding RelativeSource={RelativeSource Self}}">
-    
+
     <Page.Resources>
         <Storyboard x:Name="ShowPauseStoryboard">
-            <FadeInThemeAnimation Storyboard.TargetName="PauseWindow"></FadeInThemeAnimation>
+            <FadeInThemeAnimation Storyboard.TargetName="PauseWindow" />
         </Storyboard>
         <Storyboard x:Name="HidePauseStoryboard">
-            <FadeOutThemeAnimation Storyboard.TargetName="PauseWindow"></FadeOutThemeAnimation>
+            <FadeOutThemeAnimation Storyboard.TargetName="PauseWindow" />
         </Storyboard>
         <Storyboard x:Name="ShowUpdateStoryboard">
-            <FadeInThemeAnimation Storyboard.TargetName="UpdateWindow"></FadeInThemeAnimation>
+            <FadeInThemeAnimation Storyboard.TargetName="UpdateWindow" />
         </Storyboard>
         <Storyboard x:Name="HideUpdateStoryboard">
-            <FadeOutThemeAnimation Storyboard.TargetName="UpdateWindow"></FadeOutThemeAnimation>
+            <FadeOutThemeAnimation Storyboard.TargetName="UpdateWindow" />
         </Storyboard>
     </Page.Resources>
     <Grid>
-        <Grid Name="UpdateWindow" Background="#111">
-        <Canvas Name="GroundDrawArea"></Canvas>
-        <Canvas Name="SkyBox">
-            <Canvas Name="SkyDrawArea"></Canvas>
-            <Canvas Name="MountainDrawArea"></Canvas>
-        </Canvas>
-        <Canvas Name="PlaneArea" >
-            <Image Name="Airplane" RenderTransformOrigin="0.5, 0.2" Height="90" Width="190" Source="/../Assets/MyImages/airplane-small.png"></Image>
-        </Canvas>
-
-        <StackPanel Name="DebugInfo" HorizontalAlignment="Right" Margin="0,0,2,0">
-            <TextBlock Width="52" Style="{StaticResource DebugText}" Text="Inclinometer" HorizontalAlignment="Left"/>
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Width="26" Style="{StaticResource DebugText}" Text="AngleX"/>
-                <TextBlock Width="26" Style="{StaticResource DebugText}" Text="{Binding State.Angles.X, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Width="26" Style="{StaticResource DebugText}" Text="AngleY"/>
-                <TextBlock Width="26" Style="{StaticResource DebugText}" Text="{Binding State.Angles.Y, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Width="26" Style="{StaticResource DebugText}" Text="AngleZ"/>
-                <TextBlock Width="26" Style="{StaticResource DebugText}" Text="{Binding State.Angles.Z, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Width="26" Style="{StaticResource DebugText}" Text="SpeedX"/>
-                <TextBlock Width="26" Style="{StaticResource DebugText}" Text="{Binding State.SpeedX, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Width="26" Style="{StaticResource DebugText}" Text="SpeedY"/>
-                <TextBlock Width="26" Style="{StaticResource DebugText}" Text="{Binding State.SpeedY, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Width="10" Style="{StaticResource DebugText}" Text="X"/>
-                <TextBlock Width="42" Style="{StaticResource DebugText}" Text="{Binding State.Position.X, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Width="10" Style="{StaticResource DebugText}" Text="Y"/>
-                <TextBlock Width="42" Style="{StaticResource DebugText}" Text="{Binding State.Position.Y, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right"/>
-            </StackPanel>
-        </StackPanel>
-        
-        <StackPanel Name="GameInfo" HorizontalAlignment="Left" Margin="2,0,0,0">
-            <StackPanel Orientation="Vertical" HorizontalAlignment="Left" Width="100">
-                <TextBlock Style="{StaticResource TextScore}" TextAlignment="Left" Text="Score"/>
-                <TextBlock Style="{StaticResource TextScore}" TextAlignment="Left" Text="{Binding State.Score, Converter={StaticResource TruncateDoubleConverter}}" />
-            </StackPanel>
-        </StackPanel>
-    </Grid>
         <Grid Name="PauseWindow">
-        <Grid.Background>
-            <ImageBrush ImageSource="/../Assets/MyImages/airport.png"></ImageBrush>
-        </Grid.Background>
+            <Grid.Resources>
+                <Storyboard x:Name="PulseButton">
+                    <DoubleAnimation By=".05" Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleY"
+                                     AutoReverse="True" />
+                    <DoubleAnimation By=".05" Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleX"
+                                     AutoReverse="True" />
+                </Storyboard>
+            </Grid.Resources>
+            <Grid.Background>
+                <ImageBrush ImageSource="{Binding State.Location.ImagePath}" />
+            </Grid.Background>
             <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
-                <TextBlock Text="Munich Airport" HorizontalAlignment="Center" FontSize="32" Margin="0,25,0,0"></TextBlock>
-                <Button Height="50" Width="200" HorizontalAlignment="Center" Margin="0,225,0,0" Background="#6786A0" Foreground="#292F2E" Name="StartButton" Click="StartButton_Click" >Lift off!</Button>
+                <TextBlock Text="{Binding State.Location.Name}" HorizontalAlignment="Center" FontSize="32"
+                           Margin="0,25,0,0" Foreground="#FF0E0E0E" />
+                <Border BorderThickness="1" BorderBrush="Black" Height="50" Width="200" RenderTransformOrigin="0.5,0.5"
+                        Margin="0,225,0,0">
+                    <Border.RenderTransform>
+                        <ScaleTransform x:Name="ButtonScale" ScaleY="1" ScaleX="1" />
+                    </Border.RenderTransform>
+                    <Button Height="50" Width="200" HorizontalAlignment="Center" Background="#1ba1e2"
+                            Foreground="#FF0E0E0E" Name="StartButton" Click="StartButton_Click" Content="Lift Off!" />
+                </Border>
+            </StackPanel>
+        </Grid>
+        <Grid Name="UpdateWindow" Background="#111" IsHitTestVisible="False">
+            <Canvas Name="GroundDrawArea" />
+            <Canvas Name="SkyBox">
+                <Canvas Name="SkyDrawArea" />
+                <Canvas Name="MountainDrawArea" />
+            </Canvas>
+            <Canvas Name="PlaneArea">
+                <Image Name="Airplane" RenderTransformOrigin="0.5, 0.2" Height="90" Width="190"
+                       Source="/../Assets/MyImages/airplane-small.png" />
+            </Canvas>
+
+            <StackPanel Name="DebugInfo" HorizontalAlignment="Right" Margin="0,0,2,0">
+                <TextBlock Width="52" Style="{StaticResource DebugText}" Text="Inclinometer" HorizontalAlignment="Left" />
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Width="26" Style="{StaticResource DebugText}" Text="AngleX" />
+                    <TextBlock Width="26" Style="{StaticResource DebugText}"
+                               Text="{Binding State.Angles.X, Converter={StaticResource TwoDecimalsConverter}}"
+                               TextAlignment="Right" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Width="26" Style="{StaticResource DebugText}" Text="AngleY" />
+                    <TextBlock Width="26" Style="{StaticResource DebugText}"
+                               Text="{Binding State.Angles.Y, Converter={StaticResource TwoDecimalsConverter}}"
+                               TextAlignment="Right" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Width="26" Style="{StaticResource DebugText}" Text="AngleZ" />
+                    <TextBlock Width="26" Style="{StaticResource DebugText}"
+                               Text="{Binding State.Angles.Z, Converter={StaticResource TwoDecimalsConverter}}"
+                               TextAlignment="Right" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Width="26" Style="{StaticResource DebugText}" Text="SpeedX" />
+                    <TextBlock Width="26" Style="{StaticResource DebugText}"
+                               Text="{Binding State.SpeedX, Converter={StaticResource TwoDecimalsConverter}}"
+                               TextAlignment="Right" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Width="26" Style="{StaticResource DebugText}" Text="SpeedY" />
+                    <TextBlock Width="26" Style="{StaticResource DebugText}"
+                               Text="{Binding State.SpeedY, Converter={StaticResource TwoDecimalsConverter}}"
+                               TextAlignment="Right" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Width="10" Style="{StaticResource DebugText}" Text="X" />
+                    <TextBlock Width="42" Style="{StaticResource DebugText}"
+                               Text="{Binding State.Position.X, Converter={StaticResource TwoDecimalsConverter}}"
+                               TextAlignment="Right" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Width="10" Style="{StaticResource DebugText}" Text="Y" />
+                    <TextBlock Width="42" Style="{StaticResource DebugText}"
+                               Text="{Binding State.Position.Y, Converter={StaticResource TwoDecimalsConverter}}"
+                               TextAlignment="Right" />
+                </StackPanel>
+            </StackPanel>
+
+            <StackPanel Name="GameInfo" HorizontalAlignment="Left" Margin="2,0,0,0">
+                <StackPanel Orientation="Vertical" HorizontalAlignment="Left" Width="100">
+                    <TextBlock Style="{StaticResource TextScore}" TextAlignment="Left" Text="Score" />
+                    <TextBlock Style="{StaticResource TextScore}" TextAlignment="Left"
+                               Text="{Binding State.Score, Converter={StaticResource TruncateDoubleConverter}}" />
+                </StackPanel>
             </StackPanel>
         </Grid>
     </Grid>

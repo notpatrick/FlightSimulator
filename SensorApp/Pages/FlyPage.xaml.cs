@@ -27,15 +27,11 @@ namespace SensorApp {
             InitializeComponent();
             DisplayInformation.AutoRotationPreferences = DisplayOrientations.Landscape;
             _deviceId = MyHelpers.GetHardwareId();
-
-            // Inizialize accelerometer
             _accelerometer = Accelerometer.GetDefault();
 
-            // Call UI initialization methods on Loaded
             Loaded += delegate {
                 InitStoryboards();
                 InitUpdateWindow();
-
                 State = new GameState();
                 if (_accelerometer != null) {
                     var minReportInterval = _accelerometer.MinimumReportInterval;
@@ -45,7 +41,7 @@ namespace SensorApp {
                     StartUpdate();
                 }
             };
-            Unloaded += delegate { MyHelpers.Save(State, _deviceId); };
+            Unloaded += delegate { StopUpdate(); };
         }
 
         private void InitUpdateWindow() {
@@ -57,17 +53,25 @@ namespace SensorApp {
         }
 
         private void InitStoryboards() {
+            // Button pulse loop
+            EventHandler<object> lambdaButton = (sender, o) => { PulseButton.Begin(); };
             // When Update screen gets shown
             EventHandler<object> lambdaShowUpdate = (sender, o) => { _accelerometer.ReadingChanged += ReadingChanged; };
             ShowUpdateStoryboard.Completed += lambdaShowUpdate;
             // When Pause screen gets shown
-            EventHandler<object> lambdaShowPause = (sender, o) => { };
+            EventHandler<object> lambdaShowPause = (sender, o) => {
+                PulseButton.Completed += lambdaButton;
+                PulseButton.Begin();
+            };
             ShowPauseStoryboard.Completed += lambdaShowPause;
             // When update screen gets hidden
             EventHandler<object> lambdaHideUpdate = (sender, o) => { ShowPauseStoryboard.Begin(); };
             HideUpdateStoryboard.Completed += lambdaHideUpdate;
             // When pause screen gets hidden
-            EventHandler<object> lambdaHidePause = (sender, o) => { ShowUpdateStoryboard.Begin(); };
+            EventHandler<object> lambdaHidePause = (sender, o) => {
+                PulseButton.Completed -= lambdaButton;
+                ShowUpdateStoryboard.Begin();
+            };
             HidePauseStoryboard.Completed += lambdaHidePause;
         }
 
@@ -75,17 +79,15 @@ namespace SensorApp {
             _accelerometer.ReadingChanged -= ReadingChanged;
             HideUpdateStoryboard.Begin();
             MyHelpers.Save(State, _deviceId);
-            Debug.WriteLine("Stopped Updating");
         }
 
         private async void StartUpdate() {
             var fileExist = await MyHelpers.CheckFile(_deviceId);
             if (fileExist) {
                 State = await MyHelpers.Load(_deviceId);
-                State.ResetSpeeds().ResetAngles();
             }
+            State.ResetSpeeds().ResetAngles().GetNextLocation();
             HidePauseStoryboard.Begin();
-            Debug.WriteLine("Started updating");
         }
 
         private void StartButton_Click(object sender, RoutedEventArgs e) {
@@ -115,18 +117,16 @@ namespace SensorApp {
         /// Main Update Method
         /// </summary>
         private void Update() {
-            // Rotate airplane
-            Airplane.RenderTransform = new RotateTransform {Angle = -State.Angles.X};
             // Calculate SpeedX and SpeedY
             CalculateSpeedY();
             CalculateSpeedX();
             // Check for Stop
-            if (State.SpeedY < 0) {
-                State.SpeedY = 0;
-                State.SpeedX = 0;
+            if (State.SpeedY < GameConstants.MinSpeedY) {
                 StopUpdate();
                 return;
             }
+            // Rotate airplane
+            Airplane.RenderTransform = new RotateTransform {Angle = -State.Angles.X};
             // Update each ground image
             foreach (var groundImage in _groundImages) {
                 var top = Canvas.GetTop(groundImage);
@@ -192,10 +192,10 @@ namespace SensorApp {
         /// Set plane position on canvas
         /// </summary>
         private void InitPlane() {
-            double left = (PlaneArea.ActualWidth - Airplane.ActualWidth) * 0.5;
+            var left = (PlaneArea.ActualWidth - Airplane.ActualWidth) * 0.5;
             Canvas.SetLeft(Airplane, left);
 
-            double top = (PlaneArea.ActualHeight - Airplane.ActualHeight) * 0.75;
+            var top = (PlaneArea.ActualHeight - Airplane.ActualHeight) * 0.75;
             Canvas.SetTop(Airplane, top);
         }
 

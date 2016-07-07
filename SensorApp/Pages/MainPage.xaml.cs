@@ -2,26 +2,19 @@
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 
-// The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
-
-namespace SensorApp
-{
-    /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
-    /// </summary>
-    public sealed partial class MainPage : Page
-    {
-        public MainPage()
-        {
-            this.InitializeComponent();
+namespace SensorApp {
+    public sealed partial class MainPage : Page {
+        public MainPage() {
+            InitializeComponent();
 
             // Force landscape orientation
             DisplayInformation.AutoRotationPreferences = DisplayOrientations.Landscape;
+            Loaded += (sender, args) => {
+                PulseButton.Completed += (o, o1) => { PulseButton.Begin(); };
+                PulseButton.Begin();
+            };
         }
 
-        private void FlyButton_Click(object sender, RoutedEventArgs e)
-        {
-            this.Frame.Navigate(typeof(FlyPage));
-        }
+        private void FlyButton_Click(object sender, RoutedEventArgs e) { Frame.Navigate(typeof(FlyPage)); }
     }
 }

@@ -6,16 +6,16 @@
     RequestedTheme="Light">
     <Application.Resources>
         <Style x:Key="DebugText" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="8"/>
-            <Setter Property="Foreground" Value="Magenta"></Setter>
+            <Setter Property="FontSize" Value="8" />
+            <Setter Property="Foreground" Value="Magenta" />
         </Style>
         <Style x:Key="TextScore" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="15"/>
-            <Setter Property="Foreground" Value="Black"></Setter>
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="Foreground" Value="Black" />
         </Style>
-        
-        <local:TwoDecimalsConverter x:Key="TwoDecimalsConverter"/>
-        <local:TruncateDoubleConverter x:Key="TruncateDoubleConverter"/>
+
+        <local:TwoDecimalsConverter x:Key="TwoDecimalsConverter" />
+        <local:TruncateDoubleConverter x:Key="TruncateDoubleConverter" />
     </Application.Resources>
 
 </Application>
