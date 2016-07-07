@@ -26,13 +26,13 @@ namespace SensorApp {
         public FlyPage() {
             InitializeComponent();
             DisplayInformation.AutoRotationPreferences = DisplayOrientations.Landscape;
-            _deviceId = MyHelpers.GetHardwareId();
             _accelerometer = Accelerometer.GetDefault();
+            _deviceId = MyHelpers.GetHardwareId();
 
             Loaded += delegate {
-                InitStoryboards();
-                InitUpdateWindow();
+                InitWindow();
                 State = new GameState();
+
                 if (_accelerometer != null) {
                     var minReportInterval = _accelerometer.MinimumReportInterval;
                     var reportInterval = minReportInterval > 16 ? minReportInterval : 16;
@@ -44,7 +44,138 @@ namespace SensorApp {
             Unloaded += delegate { StopUpdate(); };
         }
 
-        private void InitUpdateWindow() {
+        private async void ReadingChanged(object sender, AccelerometerReadingChangedEventArgs e) { await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => { Update(e.Reading); }); }
+
+        private void StartButton_Click(object sender, RoutedEventArgs e) { StartUpdate(); }
+
+        #region Update
+
+        private async void StartUpdate() {
+            if (await MyHelpers.CheckFile(_deviceId)) {
+                State = await MyHelpers.Load(_deviceId);
+            }
+            State.ResetSpeeds().ResetAngles().GetNextLocation();
+            HidePauseStoryboard.Begin();
+        }
+
+        private void StopUpdate() {
+            _accelerometer.ReadingChanged -= ReadingChanged;
+            HideUpdateStoryboard.Begin();
+            MyHelpers.Save(State, _deviceId);
+        }
+
+        // Main Update Method
+        private void Update(AccelerometerReading reading) {
+            State.Angles = Angles.CalculateAngles(reading);
+            // Calculate Speeds
+            CalculateSpeedY();
+            CalculateSpeedX();
+            // Check if it should stop
+            if (State.SpeedY < GameConstants.MinSpeedY) {
+                StopUpdate();
+                return;
+            }
+            // Rotate airplane
+            Airplane.RenderTransform = new RotateTransform {Angle = -State.Angles.X};
+            // Updates
+            UpdateGround();
+            UpdateSky();
+            UpdateMountain();
+            UpdateScore();
+            OnPropertyChanged(nameof(State));
+        }
+
+        // Update ground
+        private void UpdateGround() {
+            foreach (var groundImage in _groundImages) {
+                var top = Canvas.GetTop(groundImage);
+                var left = Canvas.GetLeft(groundImage);
+                var newTop = top + State.SpeedY;
+                var newLeft = left;
+
+                if (State.Angles.X > 0) {
+                    newLeft = left + State.SpeedX;
+                }
+                else if (State.Angles.X < 0) {
+                    newLeft = left - State.SpeedX;
+                }
+
+                PositionInCanvas(groundImage, newLeft, newTop);
+                CheckGroundOutOfBound(groundImage);
+                State.Position = new Point(State.Position.X + left - newLeft, State.Position.Y + top - newTop);
+            }
+        }
+
+        // Update sky
+        private void UpdateSky() {
+            foreach (var skyImage in _skyImages) {
+                var top = Canvas.GetTop(skyImage);
+                var left = Canvas.GetLeft(skyImage);
+                var newTop = top - State.SpeedY * GameConstants.SkyCoeffY;
+                var newLeft = left;
+
+                if (State.Angles.X > 0) {
+                    newLeft = left + State.SpeedX * GameConstants.SkyCoeffX;
+                }
+                else if (State.Angles.X < 0) {
+                    newLeft = left - State.SpeedX * GameConstants.SkyCoeffX;
+                }
+                PositionInCanvas(skyImage, newLeft, newTop);
+                CheckSkyOutOfBound(skyImage);
+            }
+        }
+
+        // Update mountain
+        private void UpdateMountain() {
+            foreach (var mountainImage in _mountainImages) {
+                var left = Canvas.GetLeft(mountainImage);
+                var top = Canvas.GetTop(mountainImage);
+                var newLeft = left;
+
+                if (State.Angles.X > 0) {
+                    newLeft = left + State.SpeedX * GameConstants.MountainCoeffX;
+                }
+                else if (State.Angles.X < 0) {
+                    newLeft = left - State.SpeedX * GameConstants.MountainCoeffX;
+                }
+                PositionInCanvas(mountainImage, newLeft, top);
+                CheckMountainOutOfBound(mountainImage);
+            }
+        }
+
+        // Update score
+        private void UpdateScore() {
+            var positionDelta = Math.Sqrt(Math.Pow(Math.Abs(State.SpeedX), 2) + Math.Pow(Math.Abs(State.SpeedY), 2));
+            State.Score += positionDelta;
+        }
+
+        #endregion
+
+        #region Calculations
+
+        // Calculate SpeedX
+        private void CalculateSpeedX() {
+            var x = Math.Abs(State.Angles.X);
+            var value = GameConstants.MaxSpeedX / 60 * x;
+            var limitedValue = value < GameConstants.MaxSpeedX ? value : GameConstants.MaxSpeedX;
+            State.SpeedX = Math.Round(limitedValue * State.SpeedY / GameConstants.MaxSpeedY, 2);
+        }
+
+        // Calculate SpeedY
+        private void CalculateSpeedY() {
+            var x = State.Angles.Z > GameConstants.VerticalTolerance || State.Angles.Z < -GameConstants.VerticalTolerance ? State.Angles.Z : 0;
+            var delta = Math.Pow(Math.E, .002 * x) - 1;
+            var newSpeed = Math.Round(State.SpeedY + delta, 2);
+            State.SpeedY = newSpeed > GameConstants.MaxSpeedY ? GameConstants.MaxSpeedY : newSpeed;
+        }
+
+        #endregion
+
+        #region Initialization
+
+        // Call init methods
+        private void InitWindow() {
+            InitStoryboards();
             InitCanvas();
             InitPlane();
             InitGround();
@@ -52,6 +183,7 @@ namespace SensorApp {
             InitMountains();
         }
 
+        // Add EventHandlers to storyboards
         private void InitStoryboards() {
             // Button pulse loop
             EventHandler<object> lambdaButton = (sender, o) => { PulseButton.Begin(); };
@@ -75,122 +207,7 @@ namespace SensorApp {
             HidePauseStoryboard.Completed += lambdaHidePause;
         }
 
-        private void StopUpdate() {
-            _accelerometer.ReadingChanged -= ReadingChanged;
-            HideUpdateStoryboard.Begin();
-            MyHelpers.Save(State, _deviceId);
-        }
-
-        private async void StartUpdate() {
-            var fileExist = await MyHelpers.CheckFile(_deviceId);
-            if (fileExist) {
-                State = await MyHelpers.Load(_deviceId);
-            }
-            State.ResetSpeeds().ResetAngles().GetNextLocation();
-            HidePauseStoryboard.Begin();
-        }
-
-        private void StartButton_Click(object sender, RoutedEventArgs e) {
-            State.ResetSpeeds().ResetAngles();
-            StartUpdate();
-        }
-
-        /// <summary>
-        /// Call UpdateView on every sensor reading update
-        /// </summary>
-        private async void ReadingChanged(object sender, AccelerometerReadingChangedEventArgs e) {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
-                var reading = e.Reading;
-                UpdateView(reading);
-            });
-        }
-
-        /// <summary>
-        /// Update the view with new valus from Inclinometer reading
-        /// </summary>
-        private void UpdateView(AccelerometerReading reading) {
-            State.Angles = Angles.CalculateAngles(reading);
-            Update();
-        }
-
-        /// <summary>
-        /// Main Update Method
-        /// </summary>
-        private void Update() {
-            // Calculate SpeedX and SpeedY
-            CalculateSpeedY();
-            CalculateSpeedX();
-            // Check for Stop
-            if (State.SpeedY < GameConstants.MinSpeedY) {
-                StopUpdate();
-                return;
-            }
-            // Rotate airplane
-            Airplane.RenderTransform = new RotateTransform {Angle = -State.Angles.X};
-            // Update each ground image
-            foreach (var groundImage in _groundImages) {
-                var top = Canvas.GetTop(groundImage);
-                var left = Canvas.GetLeft(groundImage);
-                var newTop = top + State.SpeedY;
-                var newLeft = left;
-
-                if (State.Angles.X > 0) {
-                    newLeft = left + State.SpeedX;
-                }
-                else if (State.Angles.X < 0) {
-                    newLeft = left - State.SpeedX;
-                }
-
-                PositionInCanvas(groundImage, newLeft, newTop);
-                CheckGroundOutOfBound(groundImage);
-                State.Position = new Point(State.Position.X + left - newLeft, State.Position.Y + top - newTop);
-            }
-            // Update each sky image
-            foreach (var skyImage in _skyImages) {
-                var top = Canvas.GetTop(skyImage);
-                var left = Canvas.GetLeft(skyImage);
-                var newTop = top - State.SpeedY * GameConstants.SkyCoeffY;
-                var newLeft = left;
-
-                if (State.Angles.X > 0) {
-                    newLeft = left + State.SpeedX * GameConstants.SkyCoeffX;
-                }
-                else if (State.Angles.X < 0) {
-                    newLeft = left - State.SpeedX * GameConstants.SkyCoeffX;
-                }
-                PositionInCanvas(skyImage, newLeft, newTop);
-                CheckSkyOutOfBound(skyImage);
-            }
-            // Update each mountain image
-            foreach (var mountainImage in _mountainImages) {
-                var left = Canvas.GetLeft(mountainImage);
-                var top = Canvas.GetTop(mountainImage);
-                var newLeft = left;
-
-                if (State.Angles.X > 0) {
-                    newLeft = left + State.SpeedX * GameConstants.MountainCoeffX;
-                }
-                else if (State.Angles.X < 0) {
-                    newLeft = left - State.SpeedX * GameConstants.MountainCoeffX;
-                }
-                PositionInCanvas(mountainImage, newLeft, top);
-                CheckMountainOutOfBound(mountainImage);
-            }
-            UpdateScore();
-            OnPropertyChanged(nameof(State));
-        }
-
-        /// <summary>
-        /// Calculates a score from speeds
-        /// </summary>
-        private void UpdateScore() {
-            var positionDelta = Math.Sqrt(Math.Pow(Math.Abs(State.SpeedX), 2) + Math.Pow(Math.Abs(State.SpeedY), 2));
-            State.Score += positionDelta;
-        }
-
-        /// <summary>
-        /// Set plane position on canvas
-        /// </summary>
+        // Set plane position on canvas
         private void InitPlane() {
             var left = (PlaneArea.ActualWidth - Airplane.ActualWidth) * 0.5;
             Canvas.SetLeft(Airplane, left);
@@ -199,11 +216,8 @@ namespace SensorApp {
             Canvas.SetTop(Airplane, top);
         }
 
-        /// <summary>
-        /// Set canvas sizes and add projections for 3D look
-        /// </summary>
+        // Set canvas sizes and add projections for 3D look
         private void InitCanvas() {
-            // Transform ground canvas so it looks 3D
             var groundProjection = new PlaneProjection {
                 RotationX = -86,
                 GlobalOffsetY = 10,
@@ -212,7 +226,6 @@ namespace SensorApp {
             GroundDrawArea.Projection = groundProjection;
             GroundDrawArea.Height = This.ActualHeight;
             GroundDrawArea.Width = This.ActualWidth;
-            // Limit sky to upper screen half
             SkyBox.Clip = new RectangleGeometry {
                 Rect = new Rect {
                     X = 0,
@@ -221,7 +234,6 @@ namespace SensorApp {
                     Width = This.ActualWidth
                 }
             };
-            // Transform sky canvas so it looks 3D
             var skyProjection = new PlaneProjection {
                 RotationX = 55,
                 GlobalOffsetY = -50,
@@ -230,14 +242,11 @@ namespace SensorApp {
             SkyDrawArea.Projection = skyProjection;
             SkyDrawArea.Height = This.ActualHeight;
             SkyDrawArea.Width = This.ActualWidth;
-            // Set mountain canvas size
             MountainDrawArea.Height = This.ActualHeight * 0.5;
             MountainDrawArea.Width = This.ActualWidth;
         }
 
-        /// <summary>
-        /// Fill _groundImages array with images and initialize them in canvas
-        /// </summary>
+        // Fill _groundImages array with images and initialize them in canvas
         private void InitGround() {
             var width = This.ActualWidth;
             var image = new BitmapImage(new Uri("ms-appx:///../Assets/MyImages/ground.png"));
@@ -251,14 +260,12 @@ namespace SensorApp {
             foreach (var backgroundImage in _groundImages) {
                 GroundDrawArea.Children.Add(backgroundImage);
                 Canvas.SetZIndex(backgroundImage, -99);
-                InitGroundImage(i);
+                SetInitialGroundPosition(i);
                 i++;
             }
         }
 
-        /// <summary>
-        /// Fill _skyImages array with images and initialize them in canvas
-        /// </summary>
+        // Fill _skyImages array with images and initialize them in canvas
         private void InitSky() {
             var image = new BitmapImage(new Uri("ms-appx:///../Assets/MyImages/big-sky.png"));
             const int height = 270;
@@ -273,14 +280,12 @@ namespace SensorApp {
             foreach (var skyImage in _skyImages) {
                 SkyDrawArea.Children.Add(skyImage);
                 Canvas.SetZIndex(skyImage, -90);
-                InitSkyImage(i);
+                SetInitialSkyPosition(i);
                 i++;
             }
         }
 
-        /// <summary>
-        /// Fill _mountainImages array with images and initialize them in canvas
-        /// </summary>
+        // Fill _mountainImages array with images and initialize them in canvas
         private void InitMountains() {
             var image = new BitmapImage(new Uri("ms-appx:///../Assets/MyImages/mountains.png"));
             const double height = 110 * 0.5;
@@ -293,15 +298,13 @@ namespace SensorApp {
             foreach (var mountainImage in _mountainImages) {
                 MountainDrawArea.Children.Add(mountainImage);
                 Canvas.SetZIndex(mountainImage, -80);
-                InitMountainImage(i);
+                SetInitialMountainPosition(i);
                 i++;
             }
         }
 
-        /// <summary>
-        /// Initial mountain image positioning
-        /// </summary>
-        private void InitMountainImage(int index) {
+        // Initial mountain image positioning
+        private void SetInitialMountainPosition(int index) {
             double x, y;
             var areaHeight = MountainDrawArea.ActualHeight;
             var areaWidth = MountainDrawArea.ActualWidth;
@@ -324,10 +327,8 @@ namespace SensorApp {
             PositionInCanvas(_mountainImages[index], x, y);
         }
 
-        /// <summary>
-        /// Initial ground image positioning
-        /// </summary>
-        private void InitGroundImage(int index) {
+        // Initial ground image positioning
+        private void SetInitialGroundPosition(int index) {
             double x, y;
             var width = GroundDrawArea.ActualWidth;
             var height = GroundDrawArea.ActualHeight;
@@ -356,10 +357,8 @@ namespace SensorApp {
             PositionInCanvas(_groundImages[index], x, y);
         }
 
-        /// <summary>
-        /// Initial sky image positioning
-        /// </summary>
-        private void InitSkyImage(int index) {
+        // Initial sky image positioning
+        private void SetInitialSkyPosition(int index) {
             double x, y;
             var areaHeight = SkyDrawArea.ActualHeight;
             var areaWidth = SkyDrawArea.ActualWidth;
@@ -390,11 +389,12 @@ namespace SensorApp {
             PositionInCanvas(_skyImages[index], x, y);
         }
 
-        /// <summary>
-        /// Check if ground image is out of bounds and move to opposite side of canvas
-        /// </summary>
+        #endregion
+
+        #region BoundChecks
+
+        // Check if ground image is out of bounds and move to opposite side of canvas
         private static void CheckGroundOutOfBound(Image groundImage) {
-            // Move ground image to opposite side if it leaves screen
             var width = groundImage.Width;
             var height = groundImage.Height;
 
@@ -416,11 +416,8 @@ namespace SensorApp {
             }
         }
 
-        /// <summary>
-        /// Check if sky image is out of bounds and move to opposite side of canvas
-        /// </summary>
+        // Check if sky image is out of bounds and move to opposite side of canvas
         private static void CheckSkyOutOfBound(Image skyImage) {
-            // Move sky image to opposite side if it leaves screen
             var width = skyImage.Width;
             var height = skyImage.Height;
             var left = Canvas.GetLeft(skyImage);
@@ -441,11 +438,8 @@ namespace SensorApp {
             }
         }
 
-        /// <summary>
-        /// Check if mountain image is out of bounds and move to opposite side of canvas
-        /// </summary>
+        // Check if mountain image is out of bounds and move to opposite side of canvas
         private static void CheckMountainOutOfBound(Image mountainImage) {
-            // Move mountain image to opposite side if it leaves screen
             var width = mountainImage.Width;
             var left = Canvas.GetLeft(mountainImage);
 
@@ -457,31 +451,17 @@ namespace SensorApp {
             }
         }
 
-        /// <summary>
-        /// Linear growth function to calculate SpeedX from roll angle
-        /// </summary>
-        private void CalculateSpeedX() {
-            var x = Math.Abs(State.Angles.X);
-            var value = GameConstants.MaxSpeedX / 60 * x;
-            var limitedValue = value < GameConstants.MaxSpeedX ? value : GameConstants.MaxSpeedX;
-            State.SpeedX = Math.Round(limitedValue * State.SpeedY / GameConstants.MaxSpeedY, 2);
-        }
+        #endregion
 
-        private void CalculateSpeedY() {
-            const double growconst = .002;
-            var x = State.Angles.Z > GameConstants.VerticalTolerance || State.Angles.Z < -GameConstants.VerticalTolerance ? State.Angles.Z : 0;
-            var delta = Math.Pow(Math.E, growconst * x) - 1;
-            var newSpeed = Math.Round(State.SpeedY + delta, 2);
-            State.SpeedY = newSpeed > GameConstants.MaxSpeedY ? GameConstants.MaxSpeedY : newSpeed;
-        }
+        #region Statics
 
-        /// <summary>
-        /// Position an UIElement on a canvas
-        /// </summary>
+        // Position UIElement on canvas
         private static void PositionInCanvas(UIElement element, double x, double y) {
             Canvas.SetLeft(element, x);
             Canvas.SetTop(element, y);
         }
+
+        #endregion
 
         #region PropertyChanged
 

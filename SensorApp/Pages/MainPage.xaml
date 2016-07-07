@@ -10,27 +10,21 @@
     <Grid>
         <Grid.Resources>
             <Storyboard x:Name="PulseButton">
-                <DoubleAnimation By=".05" Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleY"
-                                 AutoReverse="True" />
-                <DoubleAnimation By=".05" Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleX"
-                                 AutoReverse="True" />
+                <DoubleAnimation By=".05" Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleY" AutoReverse="True" />
+                <DoubleAnimation By=".05" Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleX" AutoReverse="True" />
             </Storyboard>
         </Grid.Resources>
         <Grid.Background>
             <ImageBrush ImageSource="/../Assets/MyImages/screenshot2.png" />
         </Grid.Background>
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-            <TextBlock Text="FlightSimulator" Foreground="#FF0E0E0E" HorizontalAlignment="Center" FontSize="42"
-                       Margin="0,0,0,150" />
-            <Border BorderThickness="1" BorderBrush="Black" Height="50" Width="200" RenderTransformOrigin="0.5,0.5">
+            <TextBlock Text="AirplaneSimulator" Style="{StaticResource TextAirport}" />
+            <Border Style="{StaticResource BorderButton}" Padding="0">
                 <Border.RenderTransform>
                     <ScaleTransform x:Name="ButtonScale" ScaleY="1" ScaleX="1" />
                 </Border.RenderTransform>
-                <Button Height="50" Width="200" HorizontalAlignment="Center" Background="#1ba1e2"
-                        Foreground="#FF0E0E0E" Name="FlyButton" Click="FlyButton_Click" RenderTransformOrigin="0.5,0.5"
-                        Content="Fly!" />
+                <Button Style="{StaticResource ButtonMain}" Name="FlyButton" Click="FlyButton_Click" Content="Fly!" />
             </Border>
-
         </StackPanel>
     </Grid>
 </Page>
