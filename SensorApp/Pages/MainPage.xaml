@@ -7,15 +7,18 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid Background="#FF0C0C0C">
+    <Grid>
+        <Grid.Background>
+            <ImageBrush ImageSource="/../Assets/MyImages/screenshot1.png"></ImageBrush>
+        </Grid.Background>
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
             <StackPanel.Resources>
                 <Style TargetType="Button">
-                    <Setter Property="Margin" Value="0,5,0,0"/>
+                    <Setter Property="Margin" Value="0,125,0,0"/>
                 </Style>
             </StackPanel.Resources>
-            <TextBlock Text="SensorApp" Foreground="#2d89ef" HorizontalAlignment="Center" FontSize="42"></TextBlock>
-            <Button Height="64" Width="256" Background="#2d89ef" Name="FlyButton" Click="FlyButton_Click" >Fly!</Button>
+            <TextBlock Text="FlightSimulator" Foreground="#333333" HorizontalAlignment="Center" FontSize="42"></TextBlock>
+            <Button Height="50" Width="200" HorizontalAlignment="Center" Background="#A8AFCE" Foreground="#333333" Name="FlyButton" Click="FlyButton_Click" >Fly!</Button>
         </StackPanel>
     </Grid>
 </Page>

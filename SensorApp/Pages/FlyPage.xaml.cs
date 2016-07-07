@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Windows.Devices.Sensors;
 using Windows.Foundation;
@@ -8,14 +9,14 @@ using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Media.Imaging;
 using SensorApp.Annotations;
 using SensorApp.Classes;
 
 namespace SensorApp {
     public sealed partial class FlyPage : INotifyPropertyChanged {
-        private readonly Inclinometer _inclinometer;
+        private readonly Accelerometer _accelerometer;
+        private readonly string _deviceId;
         private Image[] _groundImages;
         private Image[] _skyImages;
         private Image[] _mountainImages;
@@ -25,40 +26,77 @@ namespace SensorApp {
         public FlyPage() {
             InitializeComponent();
             DisplayInformation.AutoRotationPreferences = DisplayOrientations.Landscape;
-            var id = MyHelpers.GetHardwareId();
+            _deviceId = MyHelpers.GetHardwareId();
 
-            // Inizialize inclinometer
-            _inclinometer = Inclinometer.GetDefault();
-            if (_inclinometer != null) {
-                var minReportInterval = _inclinometer.MinimumReportInterval;
-                var reportInterval = minReportInterval > 16 ? minReportInterval : 16;
-                _inclinometer.ReportInterval = reportInterval;
-                _inclinometer.ReadingTransform = DisplayOrientations.Landscape;
-                _inclinometer.ReadingChanged += ReadingChanged;
-            }
+            // Inizialize accelerometer
+            _accelerometer = Accelerometer.GetDefault();
+
             // Call UI initialization methods on Loaded
-            Loaded += async delegate {
-                InitCanvas();
-                InitPlane();
-                InitGround();
-                InitSky();
-                InitMountains();
+            Loaded += delegate {
+                InitStoryboards();
+                InitUpdateWindow();
 
-                var fileExist = await MyHelpers.CheckFile(id);
-                if (fileExist) {
-                    State = await MyHelpers.Load(id);
-                }
-                else {
-                    State = new GameState();
+                State = new GameState();
+                if (_accelerometer != null) {
+                    var minReportInterval = _accelerometer.MinimumReportInterval;
+                    var reportInterval = minReportInterval > 16 ? minReportInterval : 16;
+                    _accelerometer.ReportInterval = reportInterval;
+                    _accelerometer.ReadingTransform = DisplayOrientations.Landscape;
+                    StartUpdate();
                 }
             };
-            Unloaded += delegate { MyHelpers.Save(State, id); };
+            Unloaded += delegate { MyHelpers.Save(State, _deviceId); };
+        }
+
+        private void InitUpdateWindow() {
+            InitCanvas();
+            InitPlane();
+            InitGround();
+            InitSky();
+            InitMountains();
+        }
+
+        private void InitStoryboards() {
+            // When Update screen gets shown
+            EventHandler<object> lambdaShowUpdate = (sender, o) => { _accelerometer.ReadingChanged += ReadingChanged; };
+            ShowUpdateStoryboard.Completed += lambdaShowUpdate;
+            // When Pause screen gets shown
+            EventHandler<object> lambdaShowPause = (sender, o) => { };
+            ShowPauseStoryboard.Completed += lambdaShowPause;
+            // When update screen gets hidden
+            EventHandler<object> lambdaHideUpdate = (sender, o) => { ShowPauseStoryboard.Begin(); };
+            HideUpdateStoryboard.Completed += lambdaHideUpdate;
+            // When pause screen gets hidden
+            EventHandler<object> lambdaHidePause = (sender, o) => { ShowUpdateStoryboard.Begin(); };
+            HidePauseStoryboard.Completed += lambdaHidePause;
+        }
+
+        private void StopUpdate() {
+            _accelerometer.ReadingChanged -= ReadingChanged;
+            HideUpdateStoryboard.Begin();
+            MyHelpers.Save(State, _deviceId);
+            Debug.WriteLine("Stopped Updating");
+        }
+
+        private async void StartUpdate() {
+            var fileExist = await MyHelpers.CheckFile(_deviceId);
+            if (fileExist) {
+                State = await MyHelpers.Load(_deviceId);
+                State.ResetSpeeds().ResetAngles();
+            }
+            HidePauseStoryboard.Begin();
+            Debug.WriteLine("Started updating");
+        }
+
+        private void StartButton_Click(object sender, RoutedEventArgs e) {
+            State.ResetSpeeds().ResetAngles();
+            StartUpdate();
         }
 
         /// <summary>
         /// Call UpdateView on every sensor reading update
         /// </summary>
-        private async void ReadingChanged(object sender, InclinometerReadingChangedEventArgs e) {
+        private async void ReadingChanged(object sender, AccelerometerReadingChangedEventArgs e) {
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
                 var reading = e.Reading;
                 UpdateView(reading);
@@ -68,13 +106,9 @@ namespace SensorApp {
         /// <summary>
         /// Update the view with new valus from Inclinometer reading
         /// </summary>
-        private void UpdateView(InclinometerReading reading) {
-            State.Pitch = reading.PitchDegrees;
-            State.Roll = reading.RollDegrees;
-            State.Yaw = reading.YawDegrees;
-            OnPropertyChanged(nameof(State));
-            if (State.IsRunning)
-                Update();
+        private void UpdateView(AccelerometerReading reading) {
+            State.Angles = Angles.CalculateAngles(reading);
+            Update();
         }
 
         /// <summary>
@@ -82,23 +116,31 @@ namespace SensorApp {
         /// </summary>
         private void Update() {
             // Rotate airplane
-            Airplane.RenderTransform = new RotateTransform {Angle = -State.Roll};
-            // Calculate XSpeed
-            State.XSpeed = Math.Round(GrowthFunction(State.Roll), 1);
-            OnPropertyChanged(nameof(State));
+            Airplane.RenderTransform = new RotateTransform {Angle = -State.Angles.X};
+            // Calculate SpeedX and SpeedY
+            CalculateSpeedY();
+            CalculateSpeedX();
+            // Check for Stop
+            if (State.SpeedY < 0) {
+                State.SpeedY = 0;
+                State.SpeedX = 0;
+                StopUpdate();
+                return;
+            }
             // Update each ground image
             foreach (var groundImage in _groundImages) {
                 var top = Canvas.GetTop(groundImage);
                 var left = Canvas.GetLeft(groundImage);
-                var newTop = top + State.YSpeed;
+                var newTop = top + State.SpeedY;
                 var newLeft = left;
 
-                if (State.Roll > 0) {
-                    newLeft = left + State.XSpeed;
+                if (State.Angles.X > 0) {
+                    newLeft = left + State.SpeedX;
                 }
-                else if (State.Roll < 0) {
-                    newLeft = left - State.XSpeed;
+                else if (State.Angles.X < 0) {
+                    newLeft = left - State.SpeedX;
                 }
+
                 PositionInCanvas(groundImage, newLeft, newTop);
                 CheckGroundOutOfBound(groundImage);
                 State.Position = new Point(State.Position.X + left - newLeft, State.Position.Y + top - newTop);
@@ -107,14 +149,14 @@ namespace SensorApp {
             foreach (var skyImage in _skyImages) {
                 var top = Canvas.GetTop(skyImage);
                 var left = Canvas.GetLeft(skyImage);
-                var newTop = top - State.YSpeed * GameConstants.SkyCoeffY;
+                var newTop = top - State.SpeedY * GameConstants.SkyCoeffY;
                 var newLeft = left;
 
-                if (State.Roll > 0) {
-                    newLeft = left + State.XSpeed * GameConstants.SkyCoeffX;
+                if (State.Angles.X > 0) {
+                    newLeft = left + State.SpeedX * GameConstants.SkyCoeffX;
                 }
-                else if (State.Roll < 0) {
-                    newLeft = left - State.XSpeed * GameConstants.SkyCoeffX;
+                else if (State.Angles.X < 0) {
+                    newLeft = left - State.SpeedX * GameConstants.SkyCoeffX;
                 }
                 PositionInCanvas(skyImage, newLeft, newTop);
                 CheckSkyOutOfBound(skyImage);
@@ -125,25 +167,25 @@ namespace SensorApp {
                 var top = Canvas.GetTop(mountainImage);
                 var newLeft = left;
 
-                if (State.Roll > 0) {
-                    newLeft = left + State.XSpeed * GameConstants.MountainCoeffX;
+                if (State.Angles.X > 0) {
+                    newLeft = left + State.SpeedX * GameConstants.MountainCoeffX;
                 }
-                else if (State.Roll < 0) {
-                    newLeft = left - State.XSpeed * GameConstants.MountainCoeffX;
+                else if (State.Angles.X < 0) {
+                    newLeft = left - State.SpeedX * GameConstants.MountainCoeffX;
                 }
                 PositionInCanvas(mountainImage, newLeft, top);
                 CheckMountainOutOfBound(mountainImage);
             }
             UpdateScore();
+            OnPropertyChanged(nameof(State));
         }
 
         /// <summary>
         /// Calculates a score from speeds
         /// </summary>
         private void UpdateScore() {
-            var positionDelta = Math.Sqrt(Math.Pow(Math.Abs(State.XSpeed), 2) + Math.Pow(Math.Abs(State.YSpeed), 2));
+            var positionDelta = Math.Sqrt(Math.Pow(Math.Abs(State.SpeedX), 2) + Math.Pow(Math.Abs(State.SpeedY), 2));
             State.Score += positionDelta;
-            OnPropertyChanged(nameof(State));
         }
 
         /// <summary>
@@ -416,12 +458,21 @@ namespace SensorApp {
         }
 
         /// <summary>
-        /// Linear growth function to calculate XSpeed from roll angle
+        /// Linear growth function to calculate SpeedX from roll angle
         /// </summary>
-        private static double GrowthFunction(double x) {
-            x = Math.Abs(x);
-            var val = 15d / 60 * x;
-            return val < 15 ? val : 15;
+        private void CalculateSpeedX() {
+            var x = Math.Abs(State.Angles.X);
+            var value = GameConstants.MaxSpeedX / 60 * x;
+            var limitedValue = value < GameConstants.MaxSpeedX ? value : GameConstants.MaxSpeedX;
+            State.SpeedX = Math.Round(limitedValue * State.SpeedY / GameConstants.MaxSpeedY, 2);
+        }
+
+        private void CalculateSpeedY() {
+            const double growconst = .002;
+            var x = State.Angles.Z > GameConstants.VerticalTolerance || State.Angles.Z < -GameConstants.VerticalTolerance ? State.Angles.Z : 0;
+            var delta = Math.Pow(Math.E, growconst * x) - 1;
+            var newSpeed = Math.Round(State.SpeedY + delta, 2);
+            State.SpeedY = newSpeed > GameConstants.MaxSpeedY ? GameConstants.MaxSpeedY : newSpeed;
         }
 
         /// <summary>
