@@ -18,7 +18,6 @@ using SensorApp.Classes;
 namespace SensorApp {
     public sealed partial class FlyPage : INotifyPropertyChanged {
         private readonly Accelerometer _accelerometer;
-        private readonly string _deviceId;
         private Image[] _groundImages;
         private Image[] _skyImages;
         private Image[] _mountainImages;
@@ -29,7 +28,6 @@ namespace SensorApp {
             InitializeComponent();
             DisplayInformation.AutoRotationPreferences = DisplayOrientations.Landscape;
             _accelerometer = Accelerometer.GetDefault();
-            _deviceId = MyHelpers.GetHardwareId();
             if(GameSettings.ShowDebugInfo)
                 DebugInfo.Visibility = Visibility.Visible;
 
@@ -42,7 +40,7 @@ namespace SensorApp {
                     var reportInterval = minReportInterval > 16 ? minReportInterval : 16;
                     _accelerometer.ReportInterval = reportInterval;
                     _accelerometer.ReadingTransform = DisplayOrientations.Landscape;
-                    StartUpdate();
+                    StartFirstUpdate();
                 }
             };
             Unloaded += delegate { StopUpdate(); };
@@ -81,21 +79,24 @@ namespace SensorApp {
             FadeInInitialBlackscreenStoryboard.Completed += fadeInEventHandler;
         }
 
+        private void StartFirstUpdate() {
+            State.ResetSpeeds().ResetAngles().GetNextLocation();
+            UpdateWindow.Visibility = Visibility.Visible;
+            PauseWindow.Visibility = Visibility.Collapsed;
+            InitialBlackscreen.Opacity = 0;
+            State.IsRunning = true;
+            _accelerometer.ReadingChanged += ReadingChanged;
+        }
         
-
         #region Update
 
-        private async void StartUpdate() {
-            if (await MyHelpers.CheckFile(_deviceId)) {
-                //State = await MyHelpers.Load(_deviceId);
-            }
+        private void StartUpdate() {
             FadeInInitialBlackscreenStoryboard.Begin();
         }
 
         private void StopUpdate()
         {
             _accelerometer.ReadingChanged -= ReadingChanged;
-            MyHelpers.Save(State, _deviceId);
             FadeInInitialBlackscreenStoryboard.Begin();
         }
 
