@@ -128,7 +128,7 @@ namespace SensorApp {
             CalculateSpeedY();
             CalculateSpeedX();
             // Check if it should stop
-            if (State.SpeedY < _app.GameSettings.MinSpeedY) {
+            if (State.SpeedY < GameSettings.MinSpeedY) {
                 StopUpdate();
                 return;
             }
