@@ -28,6 +28,8 @@
                 <TextBlock Text="{Binding State.Location.Name}" Style="{StaticResource TextAirport}" />
                 <StackPanel Style="{StaticResource ButtonPanel}">
                     <Button Style="{StaticResource ButtonMain}" Name="StartButton" Click="StartButton_Click" Content="Lift Off!"></Button>
+                    <Button Style="{StaticResource ButtonMain}" Name="SaveButton" Click="SaveButton_OnClick" Content="Save game"></Button>
+                    <Button Style="{StaticResource ButtonMain}" Name="MenuButton" Click="MenuButton_OnClick" Content="Main Menu"></Button>
                 </StackPanel>
             </StackPanel>
         </Grid>

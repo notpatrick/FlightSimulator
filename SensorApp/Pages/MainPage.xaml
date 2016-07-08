@@ -15,9 +15,9 @@
             <TextBlock Text="AirplaneSimulator" Style="{StaticResource TextAirport}" />
             <StackPanel Style="{StaticResource ButtonPanel}">
                 <Button Style="{StaticResource ButtonMain}" Name="FlyButton" Click="FlyButton_Click" Content="New game"></Button>
-                <Button Style="{StaticResource ButtonMain}" Name="LoadButton" Click="FlyButton_Click" Content="Load game"></Button>
-                <Button Style="{StaticResource ButtonMain}" Name="SettingsButton" Click="FlyButton_Click" Content="Settings"></Button>
-                <Button Style="{StaticResource ButtonMain}" Name="ExitButton" Click="FlyButton_Click" Content="Exit"></Button>
+                <Button Style="{StaticResource ButtonMain}" Name="LoadButton" Click="LoadButton_OnClick" Content="Load game"></Button>
+                <Button Style="{StaticResource ButtonMain}" Name="SettingsButton" Click="SettingsButton_OnClick" Content="Settings"></Button>
+                <Button Style="{StaticResource ButtonMain}" Name="ExitButton" Click="ExitButton_OnClick" Content="Exit"></Button>
             </StackPanel>
         </StackPanel>
 

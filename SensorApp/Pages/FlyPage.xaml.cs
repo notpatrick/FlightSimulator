@@ -12,6 +12,7 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
+using Windows.UI.Xaml.Navigation;
 using SensorApp.Annotations;
 using SensorApp.Classes;
 
@@ -30,74 +31,74 @@ namespace SensorApp {
             DisplayInformation.AutoRotationPreferences = DisplayOrientations.Landscape;
             _app = (App) Application.Current;
             _accelerometer = Accelerometer.GetDefault();
+            if (_accelerometer != null) {
+                var minReportInterval = _accelerometer.MinimumReportInterval;
+                var reportInterval = minReportInterval > 16 ? minReportInterval : 16;
+                _accelerometer.ReportInterval = reportInterval;
+                _accelerometer.ReadingTransform = DisplayOrientations.Landscape;
+            }
+
             if (_app.GameSettings.ShowDebugInfo)
                 DebugInfo.Visibility = Visibility.Visible;
+            State = new GameState();
 
-            Loaded += delegate {
+            Loaded += (sender, args) => {
                 InitWindow();
-                State = new GameState();
-
-                if (_accelerometer != null) {
-                    var minReportInterval = _accelerometer.MinimumReportInterval;
-                    var reportInterval = minReportInterval > 16 ? minReportInterval : 16;
-                    _accelerometer.ReportInterval = reportInterval;
-                    _accelerometer.ReadingTransform = DisplayOrientations.Landscape;
+                if (State.IsRunning) {
                     StartFirstUpdate();
                 }
-            };
-            Unloaded += delegate { StopUpdate(); };
-        }
-
-        public FlyPage(GameState initialState) {
-            InitializeComponent();
-            DisplayInformation.AutoRotationPreferences = DisplayOrientations.Landscape;
-            _accelerometer = Accelerometer.GetDefault();
-            if (_app.GameSettings.ShowDebugInfo)
-                DebugInfo.Visibility = Visibility.Visible;
-
-            Loaded += delegate {
-                InitWindow();
-                State = initialState;
-
-                if (_accelerometer != null) {
-                    var minReportInterval = _accelerometer.MinimumReportInterval;
-                    var reportInterval = minReportInterval > 16 ? minReportInterval : 16;
-                    _accelerometer.ReportInterval = reportInterval;
-                    _accelerometer.ReadingTransform = DisplayOrientations.Landscape;
-                    StartFirstUpdate();
+                else {
+                    UpdateWindow.Visibility = Visibility.Collapsed;
+                    PauseWindow.Visibility = Visibility.Visible;
+                    InitialBlackscreen.Opacity = 0;
                 }
+                _accelerometer.ReadingChanged += ReadingChanged;
             };
-            Unloaded += delegate { StopUpdate(); };
+
+            Unloaded += (sender, args) => { StopUpdate(); };
         }
 
-        private async void ReadingChanged(object sender, AccelerometerReadingChangedEventArgs e) { await Dispatcher.RunAsync(CoreDispatcherPriority.High, () => { Update(e.Reading); }); }
+        protected override void OnNavigatedTo(NavigationEventArgs e) {
+            base.OnNavigatedTo(e);
+            if (e.Parameter as GameState != null) {
+                State = (GameState) e.Parameter;
+            }
+        }
+
+        private async void ReadingChanged(object sender, AccelerometerReadingChangedEventArgs e) {
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+                var reading = e.Reading;
+                State.Angles = Angles.CalculateAngles(reading);
+                Airplane.RenderTransform = new RotateTransform {Angle = -State.Angles.X};
+
+                if (State.IsRunning)
+                    Update();
+
+                OnPropertyChanged(nameof(State));
+            });
+        }
 
         private void StartButton_Click(object sender, RoutedEventArgs e) { StartUpdate(); }
 
+        private void SaveButton_OnClick(object sender, RoutedEventArgs e) { MyHelpers.SaveGameState(State, "GameState"); }
+
+        private void MenuButton_OnClick(object sender, RoutedEventArgs e) { Frame.Navigate(typeof(MainPage)); }
+
         private void InitStoryboards() {
-            EventHandler<object> fadeOutEventHandler = (sender, o) => {
-                if (State.IsRunning) {
-                    State.IsRunning = false;
-                }
-                else {
-                    State.IsRunning = true;
-                    _accelerometer.ReadingChanged += ReadingChanged;
-                }
-            };
             EventHandler<object> fadeInEventHandler = (sender, o) => {
-                if (State.IsRunning) {
+                if (!State.IsRunning) {
+                    State.ResetSpeeds().ResetAngles();
                     UpdateWindow.Visibility = Visibility.Collapsed;
                     PauseWindow.Visibility = Visibility.Visible;
                 }
                 else {
-                    State.ResetSpeeds().ResetAngles().GetNextLocation();
+                    State.GetNextLocation();
                     UpdateWindow.Visibility = Visibility.Visible;
                     PauseWindow.Visibility = Visibility.Collapsed;
                 }
                 FadeOutInitialBlackscreenStoryboard.Begin();
             };
 
-            FadeOutInitialBlackscreenStoryboard.Completed += fadeOutEventHandler;
             FadeInInitialBlackscreenStoryboard.Completed += fadeInEventHandler;
         }
 
@@ -107,21 +108,22 @@ namespace SensorApp {
             PauseWindow.Visibility = Visibility.Collapsed;
             InitialBlackscreen.Opacity = 0;
             State.IsRunning = true;
-            _accelerometer.ReadingChanged += ReadingChanged;
         }
 
         #region Update
 
-        private void StartUpdate() { FadeInInitialBlackscreenStoryboard.Begin(); }
+        private void StartUpdate() {
+            State.IsRunning = true;
+            FadeInInitialBlackscreenStoryboard.Begin();
+        }
 
         private void StopUpdate() {
-            _accelerometer.ReadingChanged -= ReadingChanged;
+            State.IsRunning = false;
             FadeInInitialBlackscreenStoryboard.Begin();
         }
 
         // Main Update Method
-        private void Update(AccelerometerReading reading) {
-            State.Angles = Angles.CalculateAngles(reading);
+        private void Update() {
             // Calculate Speeds
             CalculateSpeedY();
             CalculateSpeedX();
@@ -130,14 +132,11 @@ namespace SensorApp {
                 StopUpdate();
                 return;
             }
-            // Rotate airplane
-            Airplane.RenderTransform = new RotateTransform {Angle = -State.Angles.X};
             // Updates
             UpdateGround();
             UpdateSky();
             UpdateMountain();
             UpdateScore();
-            OnPropertyChanged(nameof(State));
         }
 
         // Update ground
