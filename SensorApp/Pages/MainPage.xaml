@@ -7,7 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid>
+    <Grid Name="MainGrid">
         <Grid.Resources>
             <Storyboard x:Name="PulseButton">
                 <DoubleAnimation By=".05" Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleY" AutoReverse="True" />
@@ -17,13 +17,16 @@
         <Grid.Background>
             <ImageBrush ImageSource="/../Assets/MyImages/screenshot2.png" />
         </Grid.Background>
-        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+        <StackPanel HorizontalAlignment="Center">
             <TextBlock Text="AirplaneSimulator" Style="{StaticResource TextAirport}" />
-            <Button Style="{StaticResource ButtonMain}" Name="FlyButton" Click="FlyButton_Click" Content="Fly!">
-                <Button.RenderTransform>
-                    <ScaleTransform x:Name="ButtonScale" ScaleY="1" ScaleX="1" ></ScaleTransform>
-                </Button.RenderTransform>
-            </Button>
+            <StackPanel Style="{StaticResource ButtonPanel}">
+                <Button Style="{StaticResource ButtonMain}" Name="FlyButton" Click="FlyButton_Click" Content="Fly!">
+                    <Button.RenderTransform>
+                        <ScaleTransform x:Name="ButtonScale" ScaleY="1" ScaleX="1" ></ScaleTransform>
+                    </Button.RenderTransform>
+                </Button>
+                <Button Style="{StaticResource ButtonMain}" Name="TestButton" Click="TestButton_OnClick" Content="Test"></Button>
+            </StackPanel>
         </StackPanel>
     </Grid>
 </Page>

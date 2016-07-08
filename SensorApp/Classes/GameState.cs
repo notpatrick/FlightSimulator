@@ -1,5 +1,7 @@
-﻿using System.Runtime.Serialization;
+﻿using System.ComponentModel;
+using System.Runtime.Serialization;
 using Windows.Foundation;
+using Windows.Foundation.Metadata;
 
 namespace SensorApp {
     [DataContract]
@@ -22,16 +24,22 @@ namespace SensorApp {
         [DataMember]
         public Location Location { get; set; }
 
-        public GameState() { ResetSpeeds(); }
+        [DataMember]
+        public bool IsRunning { get; set; }
+
+        public GameState() {
+            IsRunning = false;
+            ResetSpeeds();
+        }
 
         public GameState ResetSpeeds() {
-            SpeedX = GameConstants.InitialSpeedX;
-            SpeedY = GameConstants.InitialSpeedY;
+            SpeedX = GameSettings.InitialSpeedX;
+            SpeedY = GameSettings.InitialSpeedY;
             return this;
         }
 
         public GameState ResetAngles() {
-            Angles = GameConstants.InitialAngles;
+            Angles = GameSettings.InitialAngles;
             return this;
         }
 

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.Streams;
 using Windows.System.Profile;
+using Windows.UI.Xaml.Controls;
 
 namespace SensorApp.Classes {
     public static class MyHelpers {
@@ -42,6 +43,19 @@ namespace SensorApp.Classes {
         public static async Task<bool> CheckFile(string fileName) {
             var localFolder = ApplicationData.Current.LocalFolder;
             return await localFolder.TryGetItemAsync(fileName) != null;
+        }
+
+
+        public static async Task<MediaElement> LoadSoundFile(string path, bool infinite = false)
+        {
+            var mediaElement = new MediaElement();
+            if (infinite)
+                mediaElement.MediaEnded += (sender, args) => { mediaElement.Play(); };
+            mediaElement.MediaFailed += (sender, e) => { Debug.WriteLine($"Media_MediaFailed({e.ErrorMessage})"); };
+            var audioFile = await Windows.ApplicationModel.Package.Current.InstalledLocation.GetFileAsync(path);
+            var audio = await audioFile.OpenAsync(FileAccessMode.Read);
+            mediaElement.SetSource(audio, audioFile.FileType);
+            return mediaElement;
         }
 
         public static string GetHardwareId() {

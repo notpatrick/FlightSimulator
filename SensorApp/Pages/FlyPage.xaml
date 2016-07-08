@@ -10,37 +10,25 @@
     DataContext="{Binding RelativeSource={RelativeSource Self}}">
 
     <Page.Resources>
-        <Storyboard x:Name="ShowPauseStoryboard">
-            <FadeInThemeAnimation Storyboard.TargetName="PauseWindow" />
+        <Storyboard x:Name="FadeOutInitialBlackscreenStoryboard">
+            <DoubleAnimation Storyboard.TargetName="InitialBlackscreen" Storyboard.TargetProperty="Opacity" From="1.0" To="0.0" Duration="0:0:1"/>
         </Storyboard>
-        <Storyboard x:Name="HidePauseStoryboard">
-            <FadeOutThemeAnimation Storyboard.TargetName="PauseWindow" />
-        </Storyboard>
-        <Storyboard x:Name="ShowUpdateStoryboard">
-            <FadeInThemeAnimation Storyboard.TargetName="UpdateWindow" />
-        </Storyboard>
-        <Storyboard x:Name="HideUpdateStoryboard">
-            <FadeOutThemeAnimation Storyboard.TargetName="UpdateWindow" />
+        <Storyboard x:Name="FadeInInitialBlackscreenStoryboard">
+            <DoubleAnimation Storyboard.TargetName="InitialBlackscreen" Storyboard.TargetProperty="Opacity" From="0.0" To="1.0" Duration="0:0:1"/>
         </Storyboard>
     </Page.Resources>
     <Grid>
         <Grid Name="PauseWindow">
             <Grid.Resources>
-                <Storyboard x:Name="PulseButton">
-                    <DoubleAnimation By=".05" Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleY" AutoReverse="True" />
-                    <DoubleAnimation By=".05" Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleX" AutoReverse="True" />
-                </Storyboard>
             </Grid.Resources>
             <Grid.Background>
                 <ImageBrush ImageSource="{Binding State.Location.ImagePath}" />
             </Grid.Background>
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+            <StackPanel HorizontalAlignment="Center">
                 <TextBlock Text="{Binding State.Location.Name}" Style="{StaticResource TextAirport}" />
-                <Button Style="{StaticResource ButtonMain}" Name="StartButton" Click="StartButton_Click" Content="Lift Off!">
-                    <Button.RenderTransform>
-                        <ScaleTransform x:Name="ButtonScale" ScaleY="1" ScaleX="1" />
-                    </Button.RenderTransform>
-                </Button>
+                <StackPanel Style="{StaticResource ButtonPanel}">
+                    <Button Style="{StaticResource ButtonMain}" Name="StartButton" Click="StartButton_Click" Content="Lift Off!"></Button>
+                </StackPanel>
             </StackPanel>
         </Grid>
         <Grid Name="UpdateWindow" Background="#000" IsHitTestVisible="False">
@@ -52,7 +40,7 @@
             <Canvas Name="PlaneArea">
                 <Image Name="Airplane" RenderTransformOrigin="0.5, 0.2" Height="90" Width="190" Source="/../Assets/MyImages/airplane-small.png" />
             </Canvas>
-            <StackPanel Name="DebugInfo" HorizontalAlignment="Right" Margin="0,0,2,0">
+            <StackPanel Name="DebugInfo" HorizontalAlignment="Right" Margin="0,0,2,0" Visibility="Collapsed">
                 <TextBlock Width="52" Style="{StaticResource DebugText}" Text="Inclinometer" HorizontalAlignment="Left" />
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Width="26" Style="{StaticResource DebugText}" Text="AngleX" />
@@ -90,5 +78,6 @@
                 </StackPanel>
             </StackPanel>
         </Grid>
+        <Grid Name="InitialBlackscreen" Background="Black"  IsHitTestVisible="False"></Grid>
     </Grid>
 </Page>

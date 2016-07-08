@@ -2,9 +2,11 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Windows.Devices.Sensors;
 using Windows.Foundation;
 using Windows.Graphics.Display;
+using Windows.Storage;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -28,6 +30,8 @@ namespace SensorApp {
             DisplayInformation.AutoRotationPreferences = DisplayOrientations.Landscape;
             _accelerometer = Accelerometer.GetDefault();
             _deviceId = MyHelpers.GetHardwareId();
+            if(GameSettings.ShowDebugInfo)
+                DebugInfo.Visibility = Visibility.Visible;
 
             Loaded += delegate {
                 InitWindow();
@@ -44,24 +48,55 @@ namespace SensorApp {
             Unloaded += delegate { StopUpdate(); };
         }
 
-        private async void ReadingChanged(object sender, AccelerometerReadingChangedEventArgs e) { await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => { Update(e.Reading); }); }
+        private async void ReadingChanged(object sender, AccelerometerReadingChangedEventArgs e) { await Dispatcher.RunAsync(CoreDispatcherPriority.High, () => { Update(e.Reading); }); }
 
         private void StartButton_Click(object sender, RoutedEventArgs e) { StartUpdate(); }
+        private void InitStoryboards()
+        {
+            EventHandler<object> fadeOutEventHandler = (sender, o) => {
+                if (State.IsRunning) {
+                    State.IsRunning = false;
+                }
+                else {
+                    State.IsRunning = true;
+                    _accelerometer.ReadingChanged += ReadingChanged;
+                }
+            };
+            EventHandler<object> fadeInEventHandler = (sender, o) => {
+                if (State.IsRunning)
+                {
+                    UpdateWindow.Visibility = Visibility.Collapsed;
+                    PauseWindow.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    State.ResetSpeeds().ResetAngles().GetNextLocation();
+                    UpdateWindow.Visibility = Visibility.Visible;
+                    PauseWindow.Visibility = Visibility.Collapsed;
+                }
+                FadeOutInitialBlackscreenStoryboard.Begin();
+            };
+
+            FadeOutInitialBlackscreenStoryboard.Completed += fadeOutEventHandler;
+            FadeInInitialBlackscreenStoryboard.Completed += fadeInEventHandler;
+        }
+
+        
 
         #region Update
 
         private async void StartUpdate() {
             if (await MyHelpers.CheckFile(_deviceId)) {
-                State = await MyHelpers.Load(_deviceId);
+                //State = await MyHelpers.Load(_deviceId);
             }
-            State.ResetSpeeds().ResetAngles().GetNextLocation();
-            HidePauseStoryboard.Begin();
+            FadeInInitialBlackscreenStoryboard.Begin();
         }
 
-        private void StopUpdate() {
+        private void StopUpdate()
+        {
             _accelerometer.ReadingChanged -= ReadingChanged;
-            HideUpdateStoryboard.Begin();
             MyHelpers.Save(State, _deviceId);
+            FadeInInitialBlackscreenStoryboard.Begin();
         }
 
         // Main Update Method
@@ -71,7 +106,7 @@ namespace SensorApp {
             CalculateSpeedY();
             CalculateSpeedX();
             // Check if it should stop
-            if (State.SpeedY < GameConstants.MinSpeedY) {
+            if (State.SpeedY < GameSettings.MinSpeedY) {
                 StopUpdate();
                 return;
             }
@@ -111,14 +146,14 @@ namespace SensorApp {
             foreach (var skyImage in _skyImages) {
                 var top = Canvas.GetTop(skyImage);
                 var left = Canvas.GetLeft(skyImage);
-                var newTop = top - State.SpeedY * GameConstants.SkyCoeffY;
+                var newTop = top - State.SpeedY * GameSettings.SkyCoeffY;
                 var newLeft = left;
 
                 if (State.Angles.X > 0) {
-                    newLeft = left + State.SpeedX * GameConstants.SkyCoeffX;
+                    newLeft = left + State.SpeedX * GameSettings.SkyCoeffX;
                 }
                 else if (State.Angles.X < 0) {
-                    newLeft = left - State.SpeedX * GameConstants.SkyCoeffX;
+                    newLeft = left - State.SpeedX * GameSettings.SkyCoeffX;
                 }
                 PositionInCanvas(skyImage, newLeft, newTop);
                 CheckSkyOutOfBound(skyImage);
@@ -133,10 +168,10 @@ namespace SensorApp {
                 var newLeft = left;
 
                 if (State.Angles.X > 0) {
-                    newLeft = left + State.SpeedX * GameConstants.MountainCoeffX;
+                    newLeft = left + State.SpeedX * GameSettings.MountainCoeffX;
                 }
                 else if (State.Angles.X < 0) {
-                    newLeft = left - State.SpeedX * GameConstants.MountainCoeffX;
+                    newLeft = left - State.SpeedX * GameSettings.MountainCoeffX;
                 }
                 PositionInCanvas(mountainImage, newLeft, top);
                 CheckMountainOutOfBound(mountainImage);
@@ -156,17 +191,17 @@ namespace SensorApp {
         // Calculate SpeedX
         private void CalculateSpeedX() {
             var x = Math.Abs(State.Angles.X);
-            var value = GameConstants.MaxSpeedX / 60 * x;
-            var limitedValue = value < GameConstants.MaxSpeedX ? value : GameConstants.MaxSpeedX;
-            State.SpeedX = Math.Round(limitedValue * State.SpeedY / GameConstants.MaxSpeedY, 2);
+            var value = GameSettings.MaxSpeedX / 60 * x;
+            var limitedValue = value < GameSettings.MaxSpeedX ? value : GameSettings.MaxSpeedX;
+            State.SpeedX = Math.Round(limitedValue * State.SpeedY / GameSettings.MaxSpeedY, 2);
         }
 
         // Calculate SpeedY
         private void CalculateSpeedY() {
-            var x = State.Angles.Z > GameConstants.VerticalTolerance || State.Angles.Z < -GameConstants.VerticalTolerance ? State.Angles.Z : 0;
+            var x = State.Angles.Z > GameSettings.VerticalTolerance || State.Angles.Z < -GameSettings.VerticalTolerance ? State.Angles.Z : 0;
             var delta = Math.Pow(Math.E, .002 * x) - 1;
             var newSpeed = Math.Round(State.SpeedY + delta, 2);
-            State.SpeedY = newSpeed > GameConstants.MaxSpeedY ? GameConstants.MaxSpeedY : newSpeed;
+            State.SpeedY = newSpeed > GameSettings.MaxSpeedY ? GameSettings.MaxSpeedY : newSpeed;
         }
 
         #endregion
@@ -175,6 +210,9 @@ namespace SensorApp {
 
         // Call init methods
         private void InitWindow() {
+            PauseWindow.Visibility = Visibility.Collapsed;
+            UpdateWindow.Visibility = Visibility.Collapsed;
+            InitialBlackscreen.Opacity = 1;
             InitStoryboards();
             InitCanvas();
             InitPlane();
@@ -184,28 +222,7 @@ namespace SensorApp {
         }
 
         // Add EventHandlers to storyboards
-        private void InitStoryboards() {
-            // Button pulse loop
-            EventHandler<object> lambdaButton = (sender, o) => { PulseButton.Begin(); };
-            // When Update screen gets shown
-            EventHandler<object> lambdaShowUpdate = (sender, o) => { _accelerometer.ReadingChanged += ReadingChanged; };
-            ShowUpdateStoryboard.Completed += lambdaShowUpdate;
-            // When Pause screen gets shown
-            EventHandler<object> lambdaShowPause = (sender, o) => {
-                PulseButton.Completed += lambdaButton;
-                PulseButton.Begin();
-            };
-            ShowPauseStoryboard.Completed += lambdaShowPause;
-            // When update screen gets hidden
-            EventHandler<object> lambdaHideUpdate = (sender, o) => { ShowPauseStoryboard.Begin(); };
-            HideUpdateStoryboard.Completed += lambdaHideUpdate;
-            // When pause screen gets hidden
-            EventHandler<object> lambdaHidePause = (sender, o) => {
-                PulseButton.Completed -= lambdaButton;
-                ShowUpdateStoryboard.Begin();
-            };
-            HidePauseStoryboard.Completed += lambdaHidePause;
-        }
+
 
         // Set plane position on canvas
         private void InitPlane() {
@@ -249,7 +266,7 @@ namespace SensorApp {
         // Fill _groundImages array with images and initialize them in canvas
         private void InitGround() {
             var width = This.ActualWidth;
-            var image = new BitmapImage(new Uri("ms-appx:///../Assets/MyImages/ground.png"));
+            var image = new BitmapImage(new Uri(this.BaseUri, "/Assets/MyImages/ground.png"));
             _groundImages = new[] {
                 new Image() {Width = width, Height = width, Source = image},
                 new Image() {Width = width, Height = width, Source = image},
@@ -267,7 +284,7 @@ namespace SensorApp {
 
         // Fill _skyImages array with images and initialize them in canvas
         private void InitSky() {
-            var image = new BitmapImage(new Uri("ms-appx:///../Assets/MyImages/big-sky.png"));
+            var image = new BitmapImage(new Uri(this.BaseUri, "/Assets/MyImages/big-sky.png"));
             const int height = 270;
             const int width = 1728;
             _skyImages = new[] {
@@ -287,7 +304,7 @@ namespace SensorApp {
 
         // Fill _mountainImages array with images and initialize them in canvas
         private void InitMountains() {
-            var image = new BitmapImage(new Uri("ms-appx:///../Assets/MyImages/mountains.png"));
+            var image = new BitmapImage(new Uri(this.BaseUri, "/Assets/MyImages/mountains.png"));
             const double height = 110 * 0.5;
             const double width = 2098 * 0.5;
             _mountainImages = new[] {
