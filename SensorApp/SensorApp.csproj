@@ -130,6 +130,7 @@
     <Content Include="Assets\MyImages\mountains.png" />
     <Content Include="Assets\MyImages\screenshot1.png" />
     <Content Include="Assets\MyImages\screenshot2.png" />
+    <Content Include="Assets\MyImages\screenshot3.png" />
     <Content Include="Assets\MySounds\aircraft008.mp3" />
     <Content Include="Assets\MySounds\aircraft008.wav" />
     <Content Include="Properties\Default.rd.xml" />

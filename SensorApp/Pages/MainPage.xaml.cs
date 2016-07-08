@@ -10,26 +10,24 @@ using SensorApp.Classes;
 namespace SensorApp {
     public sealed partial class MainPage : Page {
         private MediaElement testAudio;
+        private App _app;
 
         public MainPage() {
             InitializeComponent();
-
+            _app = (App) Application.Current;
             // Force landscape orientation
             DisplayInformation.AutoRotationPreferences = DisplayOrientations.Landscape;
-            Loaded += (sender, args) => {
-                PulseButton.Completed += (o, o1) => { PulseButton.Begin(); };
-                //PulseButton.Begin();
-
-                TestButton.Visibility = Visibility.Visible;
-            };
+            Loaded += (sender, args) => { TestButton.Visibility = Visibility.Visible; };
         }
 
         private void FlyButton_Click(object sender, RoutedEventArgs e) { Frame.Navigate(typeof(FlyPage)); }
 
         private async void TestButton_OnClick(object sender, RoutedEventArgs e) {
-            testAudio = await MyHelpers.LoadSoundFile(@"Assets\MySounds\aircraft008.wav");
-            MainGrid.Children.Add(testAudio);
-            testAudio.Play();
+            _app.GameSettings.ShowDebugInfo = !_app.GameSettings.ShowDebugInfo;
+
+            //testAudio = await MyHelpers.LoadSoundFile(@"Assets\MySounds\aircraft008.wav");
+            //MainGrid.Children.Add(testAudio);
+            //testAudio.Play();
         }
     }
 }

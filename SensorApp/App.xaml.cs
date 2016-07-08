@@ -1,15 +1,19 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
+using SensorApp.Classes;
 
 namespace SensorApp {
     /// <summary>
     /// Provides application-specific behavior to supplement the default Application class.
     /// </summary>
-    sealed partial class App : Application {
+    public sealed partial class App : Application {
+        public GameSettings GameSettings { get; set; }
+
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
         /// executed, and as such is the logical equivalent of main() or WinMain().
@@ -17,6 +21,15 @@ namespace SensorApp {
         public App() {
             InitializeComponent();
             Suspending += OnSuspending;
+        }
+
+        private async void GetSettings() {
+            try {
+                GameSettings = await MyHelpers.LoadGameSettings();
+            }
+            catch (Exception) {
+                GameSettings = new GameSettings();
+            }
         }
 
         /// <summary>
@@ -30,6 +43,7 @@ namespace SensorApp {
                 DebugSettings.EnableFrameRateCounter = false;
             }
 #endif
+            GetSettings();
             var rootFrame = Window.Current.Content as Frame;
 
             // Do not repeat app initialization when the Window already has content,
@@ -81,6 +95,7 @@ namespace SensorApp {
         /// <param name="sender">The source of the suspend request.</param>
         /// <param name="e">Details about the suspend request.</param>
         private void OnSuspending(object sender, SuspendingEventArgs e) {
+            MyHelpers.SaveGameSettings(GameSettings);
             var deferral = e.SuspendingOperation.GetDeferral();
             //TODO: Save application state and stop any background activity
             deferral.Complete();

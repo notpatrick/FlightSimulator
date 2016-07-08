@@ -12,7 +12,7 @@ namespace SensorApp.Classes {
     public static class MyHelpers {
         public static Random Random = new Random();
 
-        public static async void Save(GameState state, string fileName) {
+        public static async void SaveGameState(GameState state, string fileName) {
             var localFolder = ApplicationData.Current.LocalFolder;
             var sampleFile = await localFolder.CreateFileAsync(fileName, CreationCollisionOption.ReplaceExisting);
 
@@ -28,7 +28,7 @@ namespace SensorApp.Classes {
             await FileIO.WriteBytesAsync(sampleFile, byteArr);
         }
 
-        public static async Task<GameState> Load(string fileName) {
+        public static async Task<GameState> LoadGameState(string fileName) {
             var localFolder = ApplicationData.Current.LocalFolder;
             var sampleFile = await localFolder.GetFileAsync(fileName);
 
@@ -40,14 +40,36 @@ namespace SensorApp.Classes {
             return state;
         }
 
+        public static async void SaveGameSettings(GameSettings settings) {
+            var localFolder = ApplicationData.Current.LocalFolder;
+            var sampleFile = await localFolder.CreateFileAsync("GameSettings", CreationCollisionOption.ReplaceExisting);
+
+            var serializer = new DataContractSerializer(typeof(GameSettings));
+
+            using (var s = sampleFile.OpenStreamForWriteAsync().Result) {
+                serializer.WriteObject(s, settings);
+                s.Flush();
+            }
+        }
+
+        public static async Task<GameSettings> LoadGameSettings() {
+            var localFolder = ApplicationData.Current.LocalFolder;
+            var sampleFile = await localFolder.GetFileAsync("GameSettings");
+
+            GameSettings settings;
+            using (var ms = await sampleFile.OpenStreamForReadAsync()) {
+                var serializer = new DataContractSerializer(typeof(GameSettings));
+                settings = (GameSettings) serializer.ReadObject(ms);
+            }
+            return settings;
+        }
+
         public static async Task<bool> CheckFile(string fileName) {
             var localFolder = ApplicationData.Current.LocalFolder;
             return await localFolder.TryGetItemAsync(fileName) != null;
         }
 
-
-        public static async Task<MediaElement> LoadSoundFile(string path, bool infinite = false)
-        {
+        public static async Task<MediaElement> LoadSoundFile(string path, bool infinite = false) {
             var mediaElement = new MediaElement();
             if (infinite)
                 mediaElement.MediaEnded += (sender, args) => { mediaElement.Play(); };

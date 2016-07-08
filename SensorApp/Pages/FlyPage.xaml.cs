@@ -18,6 +18,7 @@ using SensorApp.Classes;
 namespace SensorApp {
     public sealed partial class FlyPage : INotifyPropertyChanged {
         private readonly Accelerometer _accelerometer;
+        private App _app;
         private Image[] _groundImages;
         private Image[] _skyImages;
         private Image[] _mountainImages;
@@ -27,8 +28,9 @@ namespace SensorApp {
         public FlyPage() {
             InitializeComponent();
             DisplayInformation.AutoRotationPreferences = DisplayOrientations.Landscape;
+            _app = (App) Application.Current;
             _accelerometer = Accelerometer.GetDefault();
-            if(GameSettings.ShowDebugInfo)
+            if (_app.GameSettings.ShowDebugInfo)
                 DebugInfo.Visibility = Visibility.Visible;
 
             Loaded += delegate {
@@ -46,11 +48,33 @@ namespace SensorApp {
             Unloaded += delegate { StopUpdate(); };
         }
 
+        public FlyPage(GameState initialState) {
+            InitializeComponent();
+            DisplayInformation.AutoRotationPreferences = DisplayOrientations.Landscape;
+            _accelerometer = Accelerometer.GetDefault();
+            if (_app.GameSettings.ShowDebugInfo)
+                DebugInfo.Visibility = Visibility.Visible;
+
+            Loaded += delegate {
+                InitWindow();
+                State = initialState;
+
+                if (_accelerometer != null) {
+                    var minReportInterval = _accelerometer.MinimumReportInterval;
+                    var reportInterval = minReportInterval > 16 ? minReportInterval : 16;
+                    _accelerometer.ReportInterval = reportInterval;
+                    _accelerometer.ReadingTransform = DisplayOrientations.Landscape;
+                    StartFirstUpdate();
+                }
+            };
+            Unloaded += delegate { StopUpdate(); };
+        }
+
         private async void ReadingChanged(object sender, AccelerometerReadingChangedEventArgs e) { await Dispatcher.RunAsync(CoreDispatcherPriority.High, () => { Update(e.Reading); }); }
 
         private void StartButton_Click(object sender, RoutedEventArgs e) { StartUpdate(); }
-        private void InitStoryboards()
-        {
+
+        private void InitStoryboards() {
             EventHandler<object> fadeOutEventHandler = (sender, o) => {
                 if (State.IsRunning) {
                     State.IsRunning = false;
@@ -61,13 +85,11 @@ namespace SensorApp {
                 }
             };
             EventHandler<object> fadeInEventHandler = (sender, o) => {
-                if (State.IsRunning)
-                {
+                if (State.IsRunning) {
                     UpdateWindow.Visibility = Visibility.Collapsed;
                     PauseWindow.Visibility = Visibility.Visible;
                 }
-                else
-                {
+                else {
                     State.ResetSpeeds().ResetAngles().GetNextLocation();
                     UpdateWindow.Visibility = Visibility.Visible;
                     PauseWindow.Visibility = Visibility.Collapsed;
@@ -87,15 +109,12 @@ namespace SensorApp {
             State.IsRunning = true;
             _accelerometer.ReadingChanged += ReadingChanged;
         }
-        
+
         #region Update
 
-        private void StartUpdate() {
-            FadeInInitialBlackscreenStoryboard.Begin();
-        }
+        private void StartUpdate() { FadeInInitialBlackscreenStoryboard.Begin(); }
 
-        private void StopUpdate()
-        {
+        private void StopUpdate() {
             _accelerometer.ReadingChanged -= ReadingChanged;
             FadeInInitialBlackscreenStoryboard.Begin();
         }
@@ -107,7 +126,7 @@ namespace SensorApp {
             CalculateSpeedY();
             CalculateSpeedX();
             // Check if it should stop
-            if (State.SpeedY < GameSettings.MinSpeedY) {
+            if (State.SpeedY < _app.GameSettings.MinSpeedY) {
                 StopUpdate();
                 return;
             }
@@ -192,17 +211,17 @@ namespace SensorApp {
         // Calculate SpeedX
         private void CalculateSpeedX() {
             var x = Math.Abs(State.Angles.X);
-            var value = GameSettings.MaxSpeedX / 60 * x;
-            var limitedValue = value < GameSettings.MaxSpeedX ? value : GameSettings.MaxSpeedX;
-            State.SpeedX = Math.Round(limitedValue * State.SpeedY / GameSettings.MaxSpeedY, 2);
+            var value = _app.GameSettings.MaxSpeedX / 60 * x;
+            var limitedValue = value < _app.GameSettings.MaxSpeedX ? value : _app.GameSettings.MaxSpeedX;
+            State.SpeedX = Math.Round(limitedValue * State.SpeedY / _app.GameSettings.MaxSpeedY, 2);
         }
 
         // Calculate SpeedY
         private void CalculateSpeedY() {
-            var x = State.Angles.Z > GameSettings.VerticalTolerance || State.Angles.Z < -GameSettings.VerticalTolerance ? State.Angles.Z : 0;
+            var x = State.Angles.Z > _app.GameSettings.VerticalTolerance || State.Angles.Z < -_app.GameSettings.VerticalTolerance ? State.Angles.Z : 0;
             var delta = Math.Pow(Math.E, .002 * x) - 1;
             var newSpeed = Math.Round(State.SpeedY + delta, 2);
-            State.SpeedY = newSpeed > GameSettings.MaxSpeedY ? GameSettings.MaxSpeedY : newSpeed;
+            State.SpeedY = newSpeed > _app.GameSettings.MaxSpeedY ? _app.GameSettings.MaxSpeedY : newSpeed;
         }
 
         #endregion
@@ -223,7 +242,6 @@ namespace SensorApp {
         }
 
         // Add EventHandlers to storyboards
-
 
         // Set plane position on canvas
         private void InitPlane() {
@@ -267,7 +285,7 @@ namespace SensorApp {
         // Fill _groundImages array with images and initialize them in canvas
         private void InitGround() {
             var width = This.ActualWidth;
-            var image = new BitmapImage(new Uri(this.BaseUri, "/Assets/MyImages/ground.png"));
+            var image = new BitmapImage(new Uri(BaseUri, "/Assets/MyImages/ground.png"));
             _groundImages = new[] {
                 new Image() {Width = width, Height = width, Source = image},
                 new Image() {Width = width, Height = width, Source = image},
@@ -285,7 +303,7 @@ namespace SensorApp {
 
         // Fill _skyImages array with images and initialize them in canvas
         private void InitSky() {
-            var image = new BitmapImage(new Uri(this.BaseUri, "/Assets/MyImages/big-sky.png"));
+            var image = new BitmapImage(new Uri(BaseUri, "/Assets/MyImages/big-sky.png"));
             const int height = 270;
             const int width = 1728;
             _skyImages = new[] {
@@ -305,7 +323,7 @@ namespace SensorApp {
 
         // Fill _mountainImages array with images and initialize them in canvas
         private void InitMountains() {
-            var image = new BitmapImage(new Uri(this.BaseUri, "/Assets/MyImages/mountains.png"));
+            var image = new BitmapImage(new Uri(BaseUri, "/Assets/MyImages/mountains.png"));
             const double height = 110 * 0.5;
             const double width = 2098 * 0.5;
             _mountainImages = new[] {
