@@ -84,6 +84,8 @@ namespace SensorApp {
 
         private void MenuButton_OnClick(object sender, RoutedEventArgs e) { Frame.Navigate(typeof(MainPage)); }
 
+        private void SettingsButton_OnClick(object sender, RoutedEventArgs e) { throw new NotImplementedException(); }
+
         private void InitStoryboards() {
             EventHandler<object> fadeInEventHandler = (sender, o) => {
                 if (!State.IsRunning) {
@@ -506,5 +508,6 @@ namespace SensorApp {
         private void OnPropertyChanged([CallerMemberName] string propertyName = null) { PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName)); }
 
         #endregion
+
     }
 }
