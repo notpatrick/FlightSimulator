@@ -34,12 +34,10 @@ namespace SensorApp.Classes {
                 var localFolder = ApplicationData.Current.LocalFolder;
                 var sampleFile = await localFolder.GetFileAsync(fileName);
 
-                
                 using (var ms = await sampleFile.OpenStreamForReadAsync()) {
                     var serializer = new DataContractSerializer(typeof(GameState));
                     state = (GameState) serializer.ReadObject(ms);
                 }
-                
             }
             catch (Exception e) {
                 state = new GameState();

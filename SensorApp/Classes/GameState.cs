@@ -30,7 +30,7 @@ namespace SensorApp {
         public GameState() {
             IsRunning = true;
             Score = 0;
-            Position = new Point(0,0);
+            Position = new Point(0, 0);
             Location = Location.GetRandomLocation();
             Angles = GameSettings.InitialAngles;
             ResetSpeeds();
