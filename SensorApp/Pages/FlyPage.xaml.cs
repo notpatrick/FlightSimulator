@@ -23,6 +23,8 @@ namespace SensorApp {
         private Image[] _groundImages;
         private Image[] _skyImages;
         private Image[] _mountainImages;
+        private MediaElement[] _mediaElements;
+
         public GameState State { get; set; }
 
         public FlyPage() {
@@ -41,8 +43,8 @@ namespace SensorApp {
                 DebugInfo.Visibility = Visibility.Visible;
             State = new GameState();
 
-            Loaded += (sender, args) => {
-                InitWindow();
+            Loaded += async (sender, args) => {
+                await InitWindow();
                 if (State.IsRunning) {
                     StartFirstUpdate();
                 }
@@ -82,6 +84,9 @@ namespace SensorApp {
             var result = await SettingsContentDialog.ShowAsync();
             if (result == ContentDialogResult.Primary) {
                 DebugInfo.Visibility = _app.GameSettings.ShowDebugInfo ? Visibility.Visible : Visibility.Collapsed;
+                foreach (var mediaElement in _mediaElements) {
+                    mediaElement.IsMuted = _app.GameSettings.SoundMuted;
+                }
                 MyHelpers.SaveGameSettings(_app.GameSettings);
             }
             else {
@@ -91,16 +96,16 @@ namespace SensorApp {
 
         private void SettingsContentDialog_Opened(ContentDialog sender, ContentDialogOpenedEventArgs args) {
             EnableDebugInfoCheckBox.IsChecked = _app.GameSettings.ShowDebugInfo;
-            EnableSoundCheckBox.IsChecked = _app.GameSettings.SoundMuted;
+            MuteSoundCheckBox.IsChecked = _app.GameSettings.SoundMuted;
         }
 
         private void EnableDebugInfoCheckBox_Checked(object sender, RoutedEventArgs e) { _app.GameSettings.ShowDebugInfo = true; }
 
         private void EnableDebugInfoCheckBox_Unchecked(object sender, RoutedEventArgs e) { _app.GameSettings.ShowDebugInfo = false; }
 
-        private void EnableSoundCheckBox_Checked(object sender, RoutedEventArgs e) { _app.GameSettings.SoundMuted = true; }
+        private void MuteSoundCheckBox_Checked(object sender, RoutedEventArgs e) { _app.GameSettings.SoundMuted = true; }
 
-        private void EnableSoundCheckBox_Unchecked(object sender, RoutedEventArgs e) { _app.GameSettings.SoundMuted = false; }
+        private void MuteSoundCheckBox_Unchecked(object sender, RoutedEventArgs e) { _app.GameSettings.SoundMuted = false; }
 
         protected override void OnNavigatedTo(NavigationEventArgs e) {
             base.OnNavigatedTo(e);
@@ -238,7 +243,8 @@ namespace SensorApp {
         #region Initialization
 
         // Call init methods
-        private void InitWindow() {
+        private async Task InitWindow() {
+            await InitMedia();
             PauseWindow.Visibility = Visibility.Collapsed;
             UpdateWindow.Visibility = Visibility.Collapsed;
             Blackscreen.Opacity = 1;
@@ -250,6 +256,37 @@ namespace SensorApp {
             InitMountains();
         }
 
+        private async Task InitMedia() {
+            _mediaElements = new MediaElement[1];
+            _mediaElements[0] = await MyHelpers.LoadSoundFile(@"Assets\MySounds\aircraft008.wav");
+
+            foreach (var mediaElement in _mediaElements) {
+                UpdateWindow.Children.Add(mediaElement);
+                mediaElement.MediaOpened += (sender, args) => {
+                    if (State.IsRunning) {
+                        StartSound(sender as MediaElement);
+                    }
+                };
+                mediaElement.MediaEnded += _onMediaEnded;
+                mediaElement.IsMuted = _app.GameSettings.SoundMuted;
+                mediaElement.Volume = 100;
+                mediaElement.AutoPlay = false;
+            }
+        }
+
+        private readonly RoutedEventHandler _onMediaEnded = (sender, o) => {
+            var element = sender as MediaElement;
+            element?.Play();
+        };
+
+        private void StartSound(MediaElement element) {
+            element.Play();
+        }
+
+        private void StopSound(MediaElement element) {
+            element.Stop();
+        }
+
         // Add EventHandlers to storyboards
         private void InitStoryboards() {
             EventHandler<object> fadeInEventHandler = (sender, o) => {
@@ -257,11 +294,13 @@ namespace SensorApp {
                     State.ResetSpeeds().ResetAngles();
                     UpdateWindow.Visibility = Visibility.Collapsed;
                     PauseWindow.Visibility = Visibility.Visible;
+                    StopSound(_mediaElements[0]);
                 }
                 else {
                     State.GetNextLocation();
                     UpdateWindow.Visibility = Visibility.Visible;
                     PauseWindow.Visibility = Visibility.Collapsed;
+                    StartSound(_mediaElements[0]);
                 }
                 FadeOutInitialBlackscreenStoryboard.Begin();
             };

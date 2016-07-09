@@ -84,7 +84,7 @@
         <ContentDialog x:Name="SettingsContentDialog" PrimaryButtonText="Save" SecondaryButtonText="Cancel" Opened="SettingsContentDialog_Opened" Title="Settings">
             <StackPanel Orientation="Vertical">
                 <CheckBox x:Name="EnableDebugInfoCheckBox" Content="Show DebugInfo" Checked="EnableDebugInfoCheckBox_Checked" Unchecked="EnableDebugInfoCheckBox_Unchecked"/>
-                <CheckBox x:Name="EnableSoundCheckBox" Content="Mute Sound" Checked="EnableSoundCheckBox_Checked" Unchecked="EnableSoundCheckBox_Unchecked"></CheckBox>
+                <CheckBox x:Name="MuteSoundCheckBox" Content="Mute Sound" Checked="MuteSoundCheckBox_Checked" Unchecked="MuteSoundCheckBox_Unchecked"></CheckBox>
             </StackPanel>
         </ContentDialog>
     </Grid>
