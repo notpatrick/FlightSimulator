@@ -30,6 +30,7 @@ namespace SensorApp {
         public FlyPage() {
             InitializeComponent();
             DisplayInformation.AutoRotationPreferences = DisplayOrientations.Landscape;
+            State = new GameState();
             _app = (App) Application.Current;
             _accelerometer = Accelerometer.GetDefault();
             if (_accelerometer != null) {
@@ -38,10 +39,7 @@ namespace SensorApp {
                 _accelerometer.ReportInterval = reportInterval;
                 _accelerometer.ReadingTransform = DisplayOrientations.Landscape;
             }
-
-            if (_app.GameSettings.ShowDebugInfo)
-                DebugInfo.Visibility = Visibility.Visible;
-            State = new GameState();
+            DebugInfo.Visibility = _app.GameSettings.ShowDebugInfo ? Visibility.Visible : Visibility.Collapsed;
 
             Loaded += async (sender, args) => {
                 await InitWindow();
@@ -257,34 +255,34 @@ namespace SensorApp {
         }
 
         private async Task InitMedia() {
-            _mediaElements = new MediaElement[1];
-            _mediaElements[0] = await MyHelpers.LoadSoundFile(@"Assets\MySounds\aircraft008.wav");
+            _mediaElements = new MediaElement[3];
+            _mediaElements[0] = await MyHelpers.LoadSoundFile(@"Assets\MySounds\JetSound.mp3");
+            _mediaElements[1] = await MyHelpers.LoadSoundFile(@"Assets\MySounds\StarTheme.mp3");
+            _mediaElements[2] = await MyHelpers.LoadSoundFile(@"Assets\MySounds\CrowdedAmbient.mp3");
 
             foreach (var mediaElement in _mediaElements) {
                 UpdateWindow.Children.Add(mediaElement);
                 mediaElement.MediaOpened += (sender, args) => {
+                    var element = sender as MediaElement;
                     if (State.IsRunning) {
-                        StartSound(sender as MediaElement);
+                        if (element != null && (element.Name == "JetSound" || element.Name == "StarTheme"))
+                            element.Play();
+                    }
+                    else {
+                        if (element != null && element.Name == "CrowdedAmbient")
+                            element.Play();
                     }
                 };
-                mediaElement.MediaEnded += _onMediaEnded;
                 mediaElement.IsMuted = _app.GameSettings.SoundMuted;
-                mediaElement.Volume = 100;
+                mediaElement.IsLooping = true;
                 mediaElement.AutoPlay = false;
             }
-        }
-
-        private readonly RoutedEventHandler _onMediaEnded = (sender, o) => {
-            var element = sender as MediaElement;
-            element?.Play();
-        };
-
-        private void StartSound(MediaElement element) {
-            element.Play();
-        }
-
-        private void StopSound(MediaElement element) {
-            element.Stop();
+            _mediaElements[0].Volume = .3;
+            _mediaElements[0].Name = "JetSound";
+            _mediaElements[1].Volume = .4;
+            _mediaElements[1].Name = "StarTheme";
+            _mediaElements[2].Volume = .4;
+            _mediaElements[2].Name = "CrowdedAmbient";
         }
 
         // Add EventHandlers to storyboards
@@ -294,13 +292,17 @@ namespace SensorApp {
                     State.ResetSpeeds().ResetAngles();
                     UpdateWindow.Visibility = Visibility.Collapsed;
                     PauseWindow.Visibility = Visibility.Visible;
-                    StopSound(_mediaElements[0]);
+                    _mediaElements[0].Stop();
+                    _mediaElements[1].Stop();
+                    _mediaElements[2].Play();
                 }
                 else {
                     State.GetNextLocation();
                     UpdateWindow.Visibility = Visibility.Visible;
                     PauseWindow.Visibility = Visibility.Collapsed;
-                    StartSound(_mediaElements[0]);
+                    _mediaElements[0].Play();
+                    _mediaElements[1].Play();
+                    _mediaElements[2].Stop();
                 }
                 FadeOutInitialBlackscreenStoryboard.Begin();
             };
