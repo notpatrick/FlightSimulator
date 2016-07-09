@@ -11,10 +11,10 @@
 
     <Page.Resources>
         <Storyboard x:Name="FadeOutInitialBlackscreenStoryboard">
-            <DoubleAnimation Storyboard.TargetName="Blackscreen" Storyboard.TargetProperty="Opacity" From="1.0" To="0.0" Duration="0:0:1"/>
+            <DoubleAnimation Storyboard.TargetName="Blackscreen" Storyboard.TargetProperty="Opacity" From="1.0" To="0.0" Duration="0:0:1" />
         </Storyboard>
         <Storyboard x:Name="FadeInInitialBlackscreenStoryboard">
-            <DoubleAnimation Storyboard.TargetName="Blackscreen" Storyboard.TargetProperty="Opacity" From="0.0" To="1.0" Duration="0:0:1"/>
+            <DoubleAnimation Storyboard.TargetName="Blackscreen" Storyboard.TargetProperty="Opacity" From="0.0" To="1.0" Duration="0:0:1" />
         </Storyboard>
     </Page.Resources>
     <Grid>
@@ -27,9 +27,9 @@
             <StackPanel HorizontalAlignment="Center">
                 <TextBlock Text="{Binding State.Location.Name}" Style="{StaticResource TextAirport}" />
                 <StackPanel Style="{StaticResource ButtonPanel}">
-                    <Button Style="{StaticResource ButtonMain}" Name="StartButton" Click="StartButton_Click" Content="Lift Off!"></Button>
-                    <Button Style="{StaticResource ButtonMain}" Name="SaveButton" Click="SaveButton_OnClick" Content="Save game"></Button>
-                    <Button Style="{StaticResource ButtonMain}" Name="SettingsButton" Click="SettingsButton_OnClick" Content="Settings"></Button>
+                    <Button Style="{StaticResource ButtonMain}" Name="StartButton" Click="StartButton_Click" Content="Lift Off!" />
+                    <Button Style="{StaticResource ButtonMain}" Name="SaveButton" Click="SaveButton_OnClick" Content="Save game" />
+                    <Button Style="{StaticResource ButtonMain}" Name="SettingsButton" Click="SettingsButton_OnClick" Content="Settings" />
                 </StackPanel>
             </StackPanel>
         </Grid>
@@ -43,7 +43,6 @@
                 <Image Name="Airplane" RenderTransformOrigin="0.5, 0.2" Height="90" Width="190" Source="/../Assets/MyImages/airplane-small.png" />
             </Canvas>
             <StackPanel Name="DebugInfo" HorizontalAlignment="Right" Margin="0,0,2,0" Visibility="Collapsed">
-                <TextBlock Width="52" Style="{StaticResource DebugText}" Text="Inclinometer" HorizontalAlignment="Left" />
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Width="26" Style="{StaticResource DebugText}" Text="AngleX" />
                     <TextBlock Width="26" Style="{StaticResource DebugText}" Text="{Binding State.Angles.X, Converter={StaticResource TwoDecimalsConverter}}" TextAlignment="Right" />
@@ -80,11 +79,11 @@
                 </StackPanel>
             </StackPanel>
         </Grid>
-        <Grid Name="Blackscreen" Background="Black"  IsHitTestVisible="False"></Grid>
+        <Grid Name="Blackscreen" Background="Black" IsHitTestVisible="False" />
         <ContentDialog x:Name="SettingsContentDialog" PrimaryButtonText="Save" SecondaryButtonText="Cancel" Opened="SettingsContentDialog_Opened" Title="Settings">
             <StackPanel Orientation="Vertical">
-                <CheckBox x:Name="EnableDebugInfoCheckBox" Content="Show DebugInfo" Checked="EnableDebugInfoCheckBox_Checked" Unchecked="EnableDebugInfoCheckBox_Unchecked"/>
-                <CheckBox x:Name="MuteSoundCheckBox" Content="Mute Sound" Checked="MuteSoundCheckBox_Checked" Unchecked="MuteSoundCheckBox_Unchecked"></CheckBox>
+                <CheckBox x:Name="EnableDebugInfoCheckBox" Content="Show DebugInfo" Checked="EnableDebugInfoCheckBox_Checked" Unchecked="EnableDebugInfoCheckBox_Unchecked" />
+                <CheckBox x:Name="MuteSoundCheckBox" Content="Mute Sound" Checked="MuteSoundCheckBox_Checked" Unchecked="MuteSoundCheckBox_Unchecked" />
             </StackPanel>
         </ContentDialog>
     </Grid>

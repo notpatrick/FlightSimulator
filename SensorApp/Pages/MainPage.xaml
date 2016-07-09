@@ -14,17 +14,17 @@
         <StackPanel HorizontalAlignment="Center">
             <TextBlock Text="AirplaneSimulator" Style="{StaticResource TextAirport}" />
             <StackPanel Style="{StaticResource ButtonPanel}">
-                <Button Style="{StaticResource ButtonMain}" Name="FlyButton" Click="FlyButton_Click" Content="New game"></Button>
-                <Button Style="{StaticResource ButtonMain}" Name="LoadButton" Click="LoadButton_OnClick" Content="Load game"></Button>
-                <Button Style="{StaticResource ButtonMain}" Name="SettingsButton" Click="SettingsButton_OnClick" Content="Settings"></Button>
+                <Button Style="{StaticResource ButtonMain}" Name="FlyButton" Click="FlyButton_Click" Content="New game" />
+                <Button Style="{StaticResource ButtonMain}" Name="LoadButton" Click="LoadButton_OnClick" Content="Load game" />
+                <Button Style="{StaticResource ButtonMain}" Name="SettingsButton" Click="SettingsButton_OnClick" Content="Settings" />
             </StackPanel>
         </StackPanel>
         <ContentDialog x:Name="SettingsContentDialog" PrimaryButtonText="Save" SecondaryButtonText="Cancel" Opened="SettingsContentDialog_Opened" Title="Settings">
             <StackPanel Orientation="Vertical">
-                <CheckBox x:Name="EnableDebugInfoCheckBox" Content="Show DebugInfo" Checked="EnableDebugInfoCheckBox_Checked" Unchecked="EnableDebugInfoCheckBox_Unchecked"/>
-                <CheckBox x:Name="MuteSoundCheckBox" Content="Mute Sound" Checked="MuteSoundCheckBox_Checked" Unchecked="MuteSoundCheckBox_Unchecked"></CheckBox>
+                <CheckBox x:Name="EnableDebugInfoCheckBox" Content="Show DebugInfo" Checked="EnableDebugInfoCheckBox_Checked" Unchecked="EnableDebugInfoCheckBox_Unchecked" />
+                <CheckBox x:Name="MuteSoundCheckBox" Content="Mute Sound" Checked="MuteSoundCheckBox_Checked" Unchecked="MuteSoundCheckBox_Unchecked" />
             </StackPanel>
         </ContentDialog>
     </Grid>
-    
+
 </Page>
