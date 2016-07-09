@@ -2,87 +2,156 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Windows.Devices.Sensors;
 using Windows.Foundation;
 using Windows.Graphics.Display;
+using Windows.Storage;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
+using Windows.UI.Xaml.Navigation;
 using SensorApp.Annotations;
 using SensorApp.Classes;
 
 namespace SensorApp {
     public sealed partial class FlyPage : INotifyPropertyChanged {
         private readonly Accelerometer _accelerometer;
-        private readonly string _deviceId;
+        private App _app;
         private Image[] _groundImages;
         private Image[] _skyImages;
         private Image[] _mountainImages;
+        private MediaElement[] _mediaElements;
 
         public GameState State { get; set; }
 
         public FlyPage() {
             InitializeComponent();
             DisplayInformation.AutoRotationPreferences = DisplayOrientations.Landscape;
+            _app = (App) Application.Current;
             _accelerometer = Accelerometer.GetDefault();
-            _deviceId = MyHelpers.GetHardwareId();
+            if (_accelerometer != null) {
+                var minReportInterval = _accelerometer.MinimumReportInterval;
+                var reportInterval = minReportInterval > 16 ? minReportInterval : 16;
+                _accelerometer.ReportInterval = reportInterval;
+                _accelerometer.ReadingTransform = DisplayOrientations.Landscape;
+            }
 
-            Loaded += delegate {
-                InitWindow();
-                State = new GameState();
+            if (_app.GameSettings.ShowDebugInfo)
+                DebugInfo.Visibility = Visibility.Visible;
+            State = new GameState();
 
-                if (_accelerometer != null) {
-                    var minReportInterval = _accelerometer.MinimumReportInterval;
-                    var reportInterval = minReportInterval > 16 ? minReportInterval : 16;
-                    _accelerometer.ReportInterval = reportInterval;
-                    _accelerometer.ReadingTransform = DisplayOrientations.Landscape;
-                    StartUpdate();
+            Loaded += async (sender, args) => {
+                await InitWindow();
+                if (State.IsRunning) {
+                    StartFirstUpdate();
                 }
+                else {
+                    UpdateWindow.Visibility = Visibility.Collapsed;
+                    PauseWindow.Visibility = Visibility.Visible;
+                    Blackscreen.Opacity = 0;
+                }
+                _accelerometer.ReadingChanged += ReadingChanged;
             };
-            Unloaded += delegate { StopUpdate(); };
+
+            Unloaded += (sender, args) => { StopUpdate(); };
         }
 
-        private async void ReadingChanged(object sender, AccelerometerReadingChangedEventArgs e) { await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => { Update(e.Reading); }); }
+        private async void ReadingChanged(object sender, AccelerometerReadingChangedEventArgs e) {
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+                var reading = e.Reading;
+                State.Angles = Angles.CalculateAngles(reading);
+                Airplane.RenderTransform = new RotateTransform {Angle = -State.Angles.X};
+
+                if (State.IsRunning)
+                    Update();
+
+                OnPropertyChanged(nameof(State));
+            });
+        }
+
+        #region UIMethods
 
         private void StartButton_Click(object sender, RoutedEventArgs e) { StartUpdate(); }
 
+        private void SaveButton_OnClick(object sender, RoutedEventArgs e) { MyHelpers.SaveGameState(State, "GameState"); }
+
+        private async void SettingsButton_OnClick(object sender, RoutedEventArgs e) {
+            var previousSettings = new GameSettings(_app.GameSettings);
+
+            var result = await SettingsContentDialog.ShowAsync();
+            if (result == ContentDialogResult.Primary) {
+                DebugInfo.Visibility = _app.GameSettings.ShowDebugInfo ? Visibility.Visible : Visibility.Collapsed;
+                foreach (var mediaElement in _mediaElements) {
+                    mediaElement.IsMuted = _app.GameSettings.SoundMuted;
+                }
+                MyHelpers.SaveGameSettings(_app.GameSettings);
+            }
+            else {
+                _app.GameSettings = previousSettings;
+            }
+        }
+
+        private void SettingsContentDialog_Opened(ContentDialog sender, ContentDialogOpenedEventArgs args) {
+            EnableDebugInfoCheckBox.IsChecked = _app.GameSettings.ShowDebugInfo;
+            MuteSoundCheckBox.IsChecked = _app.GameSettings.SoundMuted;
+        }
+
+        private void EnableDebugInfoCheckBox_Checked(object sender, RoutedEventArgs e) { _app.GameSettings.ShowDebugInfo = true; }
+
+        private void EnableDebugInfoCheckBox_Unchecked(object sender, RoutedEventArgs e) { _app.GameSettings.ShowDebugInfo = false; }
+
+        private void MuteSoundCheckBox_Checked(object sender, RoutedEventArgs e) { _app.GameSettings.SoundMuted = true; }
+
+        private void MuteSoundCheckBox_Unchecked(object sender, RoutedEventArgs e) { _app.GameSettings.SoundMuted = false; }
+
+        protected override void OnNavigatedTo(NavigationEventArgs e) {
+            base.OnNavigatedTo(e);
+            var state = e.Parameter as GameState;
+            if (state != null) {
+                State = state;
+            }
+        }
+
+        #endregion
+
         #region Update
 
-        private async void StartUpdate() {
-            if (await MyHelpers.CheckFile(_deviceId)) {
-                State = await MyHelpers.Load(_deviceId);
-            }
+        private void StartFirstUpdate() {
             State.ResetSpeeds().ResetAngles().GetNextLocation();
-            HidePauseStoryboard.Begin();
+            UpdateWindow.Visibility = Visibility.Visible;
+            PauseWindow.Visibility = Visibility.Collapsed;
+            Blackscreen.Opacity = 0;
+            State.IsRunning = true;
+        }
+
+        private void StartUpdate() {
+            State.IsRunning = true;
+            FadeInInitialBlackscreenStoryboard.Begin();
         }
 
         private void StopUpdate() {
-            _accelerometer.ReadingChanged -= ReadingChanged;
-            HideUpdateStoryboard.Begin();
-            MyHelpers.Save(State, _deviceId);
+            State.IsRunning = false;
+            FadeInInitialBlackscreenStoryboard.Begin();
         }
 
         // Main Update Method
-        private void Update(AccelerometerReading reading) {
-            State.Angles = Angles.CalculateAngles(reading);
+        private void Update() {
             // Calculate Speeds
             CalculateSpeedY();
             CalculateSpeedX();
             // Check if it should stop
-            if (State.SpeedY < GameConstants.MinSpeedY) {
+            if (State.SpeedY < GameSettings.MinSpeedY) {
                 StopUpdate();
                 return;
             }
-            // Rotate airplane
-            Airplane.RenderTransform = new RotateTransform {Angle = -State.Angles.X};
             // Updates
             UpdateGround();
             UpdateSky();
             UpdateMountain();
             UpdateScore();
-            OnPropertyChanged(nameof(State));
         }
 
         // Update ground
@@ -111,14 +180,14 @@ namespace SensorApp {
             foreach (var skyImage in _skyImages) {
                 var top = Canvas.GetTop(skyImage);
                 var left = Canvas.GetLeft(skyImage);
-                var newTop = top - State.SpeedY * GameConstants.SkyCoeffY;
+                var newTop = top - State.SpeedY * GameSettings.SkyCoeffY;
                 var newLeft = left;
 
                 if (State.Angles.X > 0) {
-                    newLeft = left + State.SpeedX * GameConstants.SkyCoeffX;
+                    newLeft = left + State.SpeedX * GameSettings.SkyCoeffX;
                 }
                 else if (State.Angles.X < 0) {
-                    newLeft = left - State.SpeedX * GameConstants.SkyCoeffX;
+                    newLeft = left - State.SpeedX * GameSettings.SkyCoeffX;
                 }
                 PositionInCanvas(skyImage, newLeft, newTop);
                 CheckSkyOutOfBound(skyImage);
@@ -133,10 +202,10 @@ namespace SensorApp {
                 var newLeft = left;
 
                 if (State.Angles.X > 0) {
-                    newLeft = left + State.SpeedX * GameConstants.MountainCoeffX;
+                    newLeft = left + State.SpeedX * GameSettings.MountainCoeffX;
                 }
                 else if (State.Angles.X < 0) {
-                    newLeft = left - State.SpeedX * GameConstants.MountainCoeffX;
+                    newLeft = left - State.SpeedX * GameSettings.MountainCoeffX;
                 }
                 PositionInCanvas(mountainImage, newLeft, top);
                 CheckMountainOutOfBound(mountainImage);
@@ -156,17 +225,17 @@ namespace SensorApp {
         // Calculate SpeedX
         private void CalculateSpeedX() {
             var x = Math.Abs(State.Angles.X);
-            var value = GameConstants.MaxSpeedX / 60 * x;
-            var limitedValue = value < GameConstants.MaxSpeedX ? value : GameConstants.MaxSpeedX;
-            State.SpeedX = Math.Round(limitedValue * State.SpeedY / GameConstants.MaxSpeedY, 2);
+            var value = GameSettings.MaxSpeedX / 60 * x;
+            var limitedValue = value < GameSettings.MaxSpeedX ? value : GameSettings.MaxSpeedX;
+            State.SpeedX = Math.Round(limitedValue * State.SpeedY / GameSettings.MaxSpeedY, 2);
         }
 
         // Calculate SpeedY
         private void CalculateSpeedY() {
-            var x = State.Angles.Z > GameConstants.VerticalTolerance || State.Angles.Z < -GameConstants.VerticalTolerance ? State.Angles.Z : 0;
+            var x = State.Angles.Z > GameSettings.VerticalTolerance || State.Angles.Z < -GameSettings.VerticalTolerance ? State.Angles.Z : 0;
             var delta = Math.Pow(Math.E, .002 * x) - 1;
             var newSpeed = Math.Round(State.SpeedY + delta, 2);
-            State.SpeedY = newSpeed > GameConstants.MaxSpeedY ? GameConstants.MaxSpeedY : newSpeed;
+            State.SpeedY = newSpeed > GameSettings.MaxSpeedY ? GameSettings.MaxSpeedY : newSpeed;
         }
 
         #endregion
@@ -174,7 +243,11 @@ namespace SensorApp {
         #region Initialization
 
         // Call init methods
-        private void InitWindow() {
+        private async Task InitWindow() {
+            await InitMedia();
+            PauseWindow.Visibility = Visibility.Collapsed;
+            UpdateWindow.Visibility = Visibility.Collapsed;
+            Blackscreen.Opacity = 1;
             InitStoryboards();
             InitCanvas();
             InitPlane();
@@ -183,28 +256,56 @@ namespace SensorApp {
             InitMountains();
         }
 
+        private async Task InitMedia() {
+            _mediaElements = new MediaElement[1];
+            _mediaElements[0] = await MyHelpers.LoadSoundFile(@"Assets\MySounds\aircraft008.wav");
+
+            foreach (var mediaElement in _mediaElements) {
+                UpdateWindow.Children.Add(mediaElement);
+                mediaElement.MediaOpened += (sender, args) => {
+                    if (State.IsRunning) {
+                        StartSound(sender as MediaElement);
+                    }
+                };
+                mediaElement.MediaEnded += _onMediaEnded;
+                mediaElement.IsMuted = _app.GameSettings.SoundMuted;
+                mediaElement.Volume = 100;
+                mediaElement.AutoPlay = false;
+            }
+        }
+
+        private readonly RoutedEventHandler _onMediaEnded = (sender, o) => {
+            var element = sender as MediaElement;
+            element?.Play();
+        };
+
+        private void StartSound(MediaElement element) {
+            element.Play();
+        }
+
+        private void StopSound(MediaElement element) {
+            element.Stop();
+        }
+
         // Add EventHandlers to storyboards
         private void InitStoryboards() {
-            // Button pulse loop
-            EventHandler<object> lambdaButton = (sender, o) => { PulseButton.Begin(); };
-            // When Update screen gets shown
-            EventHandler<object> lambdaShowUpdate = (sender, o) => { _accelerometer.ReadingChanged += ReadingChanged; };
-            ShowUpdateStoryboard.Completed += lambdaShowUpdate;
-            // When Pause screen gets shown
-            EventHandler<object> lambdaShowPause = (sender, o) => {
-                PulseButton.Completed += lambdaButton;
-                PulseButton.Begin();
+            EventHandler<object> fadeInEventHandler = (sender, o) => {
+                if (!State.IsRunning) {
+                    State.ResetSpeeds().ResetAngles();
+                    UpdateWindow.Visibility = Visibility.Collapsed;
+                    PauseWindow.Visibility = Visibility.Visible;
+                    StopSound(_mediaElements[0]);
+                }
+                else {
+                    State.GetNextLocation();
+                    UpdateWindow.Visibility = Visibility.Visible;
+                    PauseWindow.Visibility = Visibility.Collapsed;
+                    StartSound(_mediaElements[0]);
+                }
+                FadeOutInitialBlackscreenStoryboard.Begin();
             };
-            ShowPauseStoryboard.Completed += lambdaShowPause;
-            // When update screen gets hidden
-            EventHandler<object> lambdaHideUpdate = (sender, o) => { ShowPauseStoryboard.Begin(); };
-            HideUpdateStoryboard.Completed += lambdaHideUpdate;
-            // When pause screen gets hidden
-            EventHandler<object> lambdaHidePause = (sender, o) => {
-                PulseButton.Completed -= lambdaButton;
-                ShowUpdateStoryboard.Begin();
-            };
-            HidePauseStoryboard.Completed += lambdaHidePause;
+
+            FadeInInitialBlackscreenStoryboard.Completed += fadeInEventHandler;
         }
 
         // Set plane position on canvas
@@ -249,7 +350,7 @@ namespace SensorApp {
         // Fill _groundImages array with images and initialize them in canvas
         private void InitGround() {
             var width = This.ActualWidth;
-            var image = new BitmapImage(new Uri("ms-appx:///../Assets/MyImages/ground.png"));
+            var image = new BitmapImage(new Uri(BaseUri, "/Assets/MyImages/ground.png"));
             _groundImages = new[] {
                 new Image() {Width = width, Height = width, Source = image},
                 new Image() {Width = width, Height = width, Source = image},
@@ -267,7 +368,7 @@ namespace SensorApp {
 
         // Fill _skyImages array with images and initialize them in canvas
         private void InitSky() {
-            var image = new BitmapImage(new Uri("ms-appx:///../Assets/MyImages/big-sky.png"));
+            var image = new BitmapImage(new Uri(BaseUri, "/Assets/MyImages/big-sky.png"));
             const int height = 270;
             const int width = 1728;
             _skyImages = new[] {
@@ -287,7 +388,7 @@ namespace SensorApp {
 
         // Fill _mountainImages array with images and initialize them in canvas
         private void InitMountains() {
-            var image = new BitmapImage(new Uri("ms-appx:///../Assets/MyImages/mountains.png"));
+            var image = new BitmapImage(new Uri(BaseUri, "/Assets/MyImages/mountains.png"));
             const double height = 110 * 0.5;
             const double width = 2098 * 0.5;
             _mountainImages = new[] {

@@ -7,23 +7,24 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid>
-        <Grid.Resources>
-            <Storyboard x:Name="PulseButton">
-                <DoubleAnimation By=".05" Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleY" AutoReverse="True" />
-                <DoubleAnimation By=".05" Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleX" AutoReverse="True" />
-            </Storyboard>
-        </Grid.Resources>
+    <Grid Name="MainGrid">
         <Grid.Background>
-            <ImageBrush ImageSource="/../Assets/MyImages/screenshot2.png" />
+            <ImageBrush ImageSource="/../Assets/MyImages/screenshot3.png" />
         </Grid.Background>
-        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+        <StackPanel HorizontalAlignment="Center">
             <TextBlock Text="AirplaneSimulator" Style="{StaticResource TextAirport}" />
-            <Button Style="{StaticResource ButtonMain}" Name="FlyButton" Click="FlyButton_Click" Content="Fly!">
-                <Button.RenderTransform>
-                    <ScaleTransform x:Name="ButtonScale" ScaleY="1" ScaleX="1" ></ScaleTransform>
-                </Button.RenderTransform>
-            </Button>
+            <StackPanel Style="{StaticResource ButtonPanel}">
+                <Button Style="{StaticResource ButtonMain}" Name="FlyButton" Click="FlyButton_Click" Content="New game"></Button>
+                <Button Style="{StaticResource ButtonMain}" Name="LoadButton" Click="LoadButton_OnClick" Content="Load game"></Button>
+                <Button Style="{StaticResource ButtonMain}" Name="SettingsButton" Click="SettingsButton_OnClick" Content="Settings"></Button>
+            </StackPanel>
         </StackPanel>
+        <ContentDialog x:Name="SettingsContentDialog" PrimaryButtonText="Save" SecondaryButtonText="Cancel" Opened="SettingsContentDialog_Opened" Title="Settings">
+            <StackPanel Orientation="Vertical">
+                <CheckBox x:Name="EnableDebugInfoCheckBox" Content="Show DebugInfo" Checked="EnableDebugInfoCheckBox_Checked" Unchecked="EnableDebugInfoCheckBox_Unchecked"/>
+                <CheckBox x:Name="MuteSoundCheckBox" Content="Mute Sound" Checked="MuteSoundCheckBox_Checked" Unchecked="MuteSoundCheckBox_Unchecked"></CheckBox>
+            </StackPanel>
+        </ContentDialog>
     </Grid>
+    
 </Page>

@@ -19,18 +19,23 @@
             <Setter Property="FontWeight" Value="Bold"></Setter>
             <Setter Property="Foreground" Value="#FF0E0E0E"></Setter>
             <Setter Property="HorizontalAlignment" Value="Center"></Setter>
-            <Setter Property="Margin" Value="0,0,0,175"></Setter>
+            <Setter Property="Margin" Value="0,25,0,0"></Setter>
             <Setter Property="RenderTransformOrigin" Value="0.5,0.5"></Setter>
         </Style>
+        <Style x:Key="ButtonPanel" TargetType="StackPanel">
+            <Setter Property="Margin" Value="0,25,0,0"></Setter>
+        </Style>
         <Style x:Key="ButtonMain" TargetType="Button">
-            <Setter Property="Background" Value="#1ba1e2"></Setter>
+            <Setter Property="Background" Value="White"></Setter>
             <Setter Property="Foreground" Value="#FF0E0E0E"></Setter>
             <Setter Property="Height" Value="50"></Setter>
             <Setter Property="Width" Value="200"></Setter>
-            <Setter Property="BorderThickness" Value="1"></Setter>
+            <Setter Property="BorderThickness" Value="2"></Setter>
             <Setter Property="BorderBrush" Value="#FF0E0E0E"></Setter>
             <Setter Property="RenderTransformOrigin" Value="0.5,0.5"></Setter>
             <Setter Property="HorizontalAlignment" Value="Center"></Setter>
+            <Setter Property="Margin" Value="0,0,0,5"></Setter>
+            <Setter Property="FontWeight" Value="Bold"></Setter>
         </Style>
         <local:TwoDecimalsConverter x:Key="TwoDecimalsConverter" />
         <local:TruncateDoubleConverter x:Key="TruncateDoubleConverter" />
