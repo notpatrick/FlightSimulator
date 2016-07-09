@@ -9,25 +9,25 @@ namespace SensorApp {
         public static double InitialSpeedY = 14;
         public static double InitialSpeedX = 0;
         public static double MinSpeedY = 3;
+        public static double MaxSpeedY = 20;
+        public static double MaxSpeedX = 10;
+        public static double VerticalTolerance = 15; // maximum Z angle before SpeedY is altered
         public static Angles InitialAngles = new Angles(90, 180, 90);
-
-        [DataMember]
-        public double MaxSpeedY { get; set; }
-
-        [DataMember]
-        public double MaxSpeedX { get; set; }
-
-        [DataMember]
-        public double VerticalTolerance { get; set; }
 
         [DataMember]
         public bool ShowDebugInfo { get; set; }
 
+        [DataMember]
+        public bool SoundMuted { get; set; }
+
         public GameSettings() {
-            MaxSpeedY = 20;
-            MaxSpeedX = 10;
-            VerticalTolerance = 15; // maximum Z angle before SpeedY is altered
             ShowDebugInfo = true;
+            SoundMuted = false;
+        }
+
+        public GameSettings(GameSettings settings) {
+            ShowDebugInfo = settings.ShowDebugInfo;
+            SoundMuted = settings.SoundMuted;
         }
     }
 }

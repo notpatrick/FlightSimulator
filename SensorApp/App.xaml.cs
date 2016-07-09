@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
@@ -27,8 +28,9 @@ namespace SensorApp {
             try {
                 GameSettings = await MyHelpers.LoadGameSettings();
             }
-            catch (Exception) {
+            catch (Exception e) {
                 GameSettings = new GameSettings();
+                Debug.WriteLine("Exception while loading settings: {0}", e.ToString());
             }
         }
 

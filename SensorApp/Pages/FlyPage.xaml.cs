@@ -23,7 +23,6 @@ namespace SensorApp {
         private Image[] _groundImages;
         private Image[] _skyImages;
         private Image[] _mountainImages;
-
         public GameState State { get; set; }
 
         public FlyPage() {
@@ -50,19 +49,12 @@ namespace SensorApp {
                 else {
                     UpdateWindow.Visibility = Visibility.Collapsed;
                     PauseWindow.Visibility = Visibility.Visible;
-                    InitialBlackscreen.Opacity = 0;
+                    Blackscreen.Opacity = 0;
                 }
                 _accelerometer.ReadingChanged += ReadingChanged;
             };
 
             Unloaded += (sender, args) => { StopUpdate(); };
-        }
-
-        protected override void OnNavigatedTo(NavigationEventArgs e) {
-            base.OnNavigatedTo(e);
-            if (e.Parameter as GameState != null) {
-                State = (GameState) e.Parameter;
-            }
         }
 
         private async void ReadingChanged(object sender, AccelerometerReadingChangedEventArgs e) {
@@ -78,41 +70,57 @@ namespace SensorApp {
             });
         }
 
+        #region UIMethods
+
         private void StartButton_Click(object sender, RoutedEventArgs e) { StartUpdate(); }
 
         private void SaveButton_OnClick(object sender, RoutedEventArgs e) { MyHelpers.SaveGameState(State, "GameState"); }
 
-        private void MenuButton_OnClick(object sender, RoutedEventArgs e) { Frame.Navigate(typeof(MainPage)); }
+        private async void SettingsButton_OnClick(object sender, RoutedEventArgs e) {
+            var previousSettings = new GameSettings(_app.GameSettings);
 
-        private void SettingsButton_OnClick(object sender, RoutedEventArgs e) { throw new NotImplementedException(); }
-
-        private void InitStoryboards() {
-            EventHandler<object> fadeInEventHandler = (sender, o) => {
-                if (!State.IsRunning) {
-                    State.ResetSpeeds().ResetAngles();
-                    UpdateWindow.Visibility = Visibility.Collapsed;
-                    PauseWindow.Visibility = Visibility.Visible;
-                }
-                else {
-                    State.GetNextLocation();
-                    UpdateWindow.Visibility = Visibility.Visible;
-                    PauseWindow.Visibility = Visibility.Collapsed;
-                }
-                FadeOutInitialBlackscreenStoryboard.Begin();
-            };
-
-            FadeInInitialBlackscreenStoryboard.Completed += fadeInEventHandler;
+            var result = await SettingsContentDialog.ShowAsync();
+            if (result == ContentDialogResult.Primary) {
+                DebugInfo.Visibility = _app.GameSettings.ShowDebugInfo ? Visibility.Visible : Visibility.Collapsed;
+                MyHelpers.SaveGameSettings(_app.GameSettings);
+            }
+            else {
+                _app.GameSettings = previousSettings;
+            }
         }
+
+        private void SettingsContentDialog_Opened(ContentDialog sender, ContentDialogOpenedEventArgs args) {
+            EnableDebugInfoCheckBox.IsChecked = _app.GameSettings.ShowDebugInfo;
+            EnableSoundCheckBox.IsChecked = _app.GameSettings.SoundMuted;
+        }
+
+        private void EnableDebugInfoCheckBox_Checked(object sender, RoutedEventArgs e) { _app.GameSettings.ShowDebugInfo = true; }
+
+        private void EnableDebugInfoCheckBox_Unchecked(object sender, RoutedEventArgs e) { _app.GameSettings.ShowDebugInfo = false; }
+
+        private void EnableSoundCheckBox_Checked(object sender, RoutedEventArgs e) { _app.GameSettings.SoundMuted = true; }
+
+        private void EnableSoundCheckBox_Unchecked(object sender, RoutedEventArgs e) { _app.GameSettings.SoundMuted = false; }
+
+        protected override void OnNavigatedTo(NavigationEventArgs e) {
+            base.OnNavigatedTo(e);
+            var state = e.Parameter as GameState;
+            if (state != null) {
+                State = state;
+            }
+        }
+
+        #endregion
+
+        #region Update
 
         private void StartFirstUpdate() {
             State.ResetSpeeds().ResetAngles().GetNextLocation();
             UpdateWindow.Visibility = Visibility.Visible;
             PauseWindow.Visibility = Visibility.Collapsed;
-            InitialBlackscreen.Opacity = 0;
+            Blackscreen.Opacity = 0;
             State.IsRunning = true;
         }
-
-        #region Update
 
         private void StartUpdate() {
             State.IsRunning = true;
@@ -212,17 +220,17 @@ namespace SensorApp {
         // Calculate SpeedX
         private void CalculateSpeedX() {
             var x = Math.Abs(State.Angles.X);
-            var value = _app.GameSettings.MaxSpeedX / 60 * x;
-            var limitedValue = value < _app.GameSettings.MaxSpeedX ? value : _app.GameSettings.MaxSpeedX;
-            State.SpeedX = Math.Round(limitedValue * State.SpeedY / _app.GameSettings.MaxSpeedY, 2);
+            var value = GameSettings.MaxSpeedX / 60 * x;
+            var limitedValue = value < GameSettings.MaxSpeedX ? value : GameSettings.MaxSpeedX;
+            State.SpeedX = Math.Round(limitedValue * State.SpeedY / GameSettings.MaxSpeedY, 2);
         }
 
         // Calculate SpeedY
         private void CalculateSpeedY() {
-            var x = State.Angles.Z > _app.GameSettings.VerticalTolerance || State.Angles.Z < -_app.GameSettings.VerticalTolerance ? State.Angles.Z : 0;
+            var x = State.Angles.Z > GameSettings.VerticalTolerance || State.Angles.Z < -GameSettings.VerticalTolerance ? State.Angles.Z : 0;
             var delta = Math.Pow(Math.E, .002 * x) - 1;
             var newSpeed = Math.Round(State.SpeedY + delta, 2);
-            State.SpeedY = newSpeed > _app.GameSettings.MaxSpeedY ? _app.GameSettings.MaxSpeedY : newSpeed;
+            State.SpeedY = newSpeed > GameSettings.MaxSpeedY ? GameSettings.MaxSpeedY : newSpeed;
         }
 
         #endregion
@@ -233,7 +241,7 @@ namespace SensorApp {
         private void InitWindow() {
             PauseWindow.Visibility = Visibility.Collapsed;
             UpdateWindow.Visibility = Visibility.Collapsed;
-            InitialBlackscreen.Opacity = 1;
+            Blackscreen.Opacity = 1;
             InitStoryboards();
             InitCanvas();
             InitPlane();
@@ -243,6 +251,23 @@ namespace SensorApp {
         }
 
         // Add EventHandlers to storyboards
+        private void InitStoryboards() {
+            EventHandler<object> fadeInEventHandler = (sender, o) => {
+                if (!State.IsRunning) {
+                    State.ResetSpeeds().ResetAngles();
+                    UpdateWindow.Visibility = Visibility.Collapsed;
+                    PauseWindow.Visibility = Visibility.Visible;
+                }
+                else {
+                    State.GetNextLocation();
+                    UpdateWindow.Visibility = Visibility.Visible;
+                    PauseWindow.Visibility = Visibility.Collapsed;
+                }
+                FadeOutInitialBlackscreenStoryboard.Begin();
+            };
+
+            FadeInInitialBlackscreenStoryboard.Completed += fadeInEventHandler;
+        }
 
         // Set plane position on canvas
         private void InitPlane() {
@@ -508,6 +533,5 @@ namespace SensorApp {
         private void OnPropertyChanged([CallerMemberName] string propertyName = null) { PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName)); }
 
         #endregion
-
     }
 }
