@@ -13,6 +13,7 @@ using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
+using DatabaseClient;
 using SensorApp.Annotations;
 using SensorApp.Classes;
 
@@ -74,7 +75,11 @@ namespace SensorApp {
 
         private void StartButton_Click(object sender, RoutedEventArgs e) { StartUpdate(); }
 
-        private void SaveButton_OnClick(object sender, RoutedEventArgs e) { MyHelpers.SaveGameState(State, "GameState"); }
+        private async void SaveButton_OnClick(object sender, RoutedEventArgs e)
+        {
+            //MyHelpers.SaveGameState(State, "GameState");
+            await WebConnection.CreateNewGameState(new ServerGameState(State));
+        }
 
         private async void SettingsButton_OnClick(object sender, RoutedEventArgs e) {
             var previousSettings = new GameSettings(_app.GameSettings);

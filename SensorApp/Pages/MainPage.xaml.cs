@@ -6,6 +6,7 @@ using Windows.Graphics.Display;
 using Windows.Storage;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using DatabaseClient;
 using SensorApp.Classes;
 
 namespace SensorApp {
@@ -23,7 +24,9 @@ namespace SensorApp {
         private void FlyButton_Click(object sender, RoutedEventArgs e) { Frame.Navigate(typeof(FlyPage)); }
 
         private async void LoadButton_OnClick(object sender, RoutedEventArgs e) {
-            var state = await MyHelpers.LoadGameState("GameState");
+            //var state = await MyHelpers.LoadGameState("GameState");
+            var serverState = await WebConnection.GetGameStateOfUser(0);
+            var state = new GameState(serverState);
             Frame.Navigate(typeof(FlyPage), state);
         }
 

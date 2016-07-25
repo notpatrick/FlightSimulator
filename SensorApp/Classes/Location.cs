@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.Serialization;
 using SensorApp.Classes;
@@ -35,6 +36,21 @@ namespace SensorApp {
                 Name = name,
                 ImagePath = imagePath
             };
+        }
+
+        public static Location GetLocationByName(string name)
+        {
+            if (LocationDictionary.ContainsKey(name))
+            {
+                var imagePath = LocationDictionary[name];
+                return new Location
+                {
+                    Name = name,
+                    ImagePath = imagePath
+                };
+            }
+            Debug.WriteLine("Location not found");
+            return GetRandomLocation();
         }
 
         public static Dictionary<string, string> LocationDictionary = new Dictionary<string, string> {
